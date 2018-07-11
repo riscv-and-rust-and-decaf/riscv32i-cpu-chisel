@@ -43,7 +43,7 @@ class GCDUnitTester(c: GCD) extends PeekPokeTester(c) {
 
       step(steps - 1) // -1 is because we step(1) already to toggle the enable
       expect(gcd.io.outputGCD, expected_gcd)
-      expect(gcd.io.outputValid, 1)
+      expect(gcd.io.outputValid, 0)
     }
   }
 }
@@ -59,6 +59,7 @@ class GCDUnitTester(c: GCD) extends PeekPokeTester(c) {
   * sbt 'testOnly example.test.GCDTester'
   * }}}
   */
+
 class GCDTester extends ChiselFlatSpec {
   // Disable this until we fix isCommandAvailable to swallow stderr along with stdout
   private val backendNames = if(false && firrtl.FileUtils.isCommandAvailable(Seq("verilator", "--version"))) {
@@ -101,3 +102,4 @@ class GCDTester extends ChiselFlatSpec {
     } should be(true)
   }
 }
+
