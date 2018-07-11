@@ -1,8 +1,7 @@
-package gcd
-
 import chisel3._
 import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 
+import gcd.GCD
 
 class MyGCDTest(gcd: GCD) extends PeekPokeTester(gcd) {
   val a = 6
@@ -22,39 +21,40 @@ class MyGCDTest(gcd: GCD) extends PeekPokeTester(gcd) {
 
 
 class MyRegFileTest(rf: RegFile) extends PeekPokeTester(rf) {
-  poke(rf.io.raddr1, 0)
-  poke(rf.io.raddr2, 0)
-  poke(rf.io.waddr, 0)
+  poke(rf.io._ID.read1.addr, 0)
+  poke(rf.io._ID.read2.addr, 0)
+  poke(rf.io._MEM.addr, 0)
+  poke(rf.io._MEM.data, 9)
   step(1)
-  expect(rf.io.rdata1, 0)
-  expect(rf.io.rdata2, 0)
+  expect(rf.io._ID.read1.data, 0)
+  expect(rf.io._ID.read2.data, 0)
 
-  poke(rf.io.waddr, 1)
-  poke(rf.io.wdata, 11111)
-  step(1)
-
-  poke(rf.io.waddr, 2)
-  poke(rf.io.wdata, 22222)
+  poke(rf.io._MEM.addr, 1)
+  poke(rf.io._MEM.data, 11111)
   step(1)
 
-  poke(rf.io.waddr, 3)
-  poke(rf.io.wdata, 33333)
+  poke(rf.io._MEM.addr, 2)
+  poke(rf.io._MEM.data, 22222)
   step(1)
 
-  poke(rf.io.raddr1, 1)
-  poke(rf.io.raddr2, 2)
-  expect(rf.io.rdata1, 11111)
-  expect(rf.io.rdata2, 22222)
-  poke(rf.io.raddr1, 3)
-  poke(rf.io.raddr2, 1)
-  expect(rf.io.rdata1, 33333)
-  expect(rf.io.rdata2, 11111)
-
-  poke(rf.io.waddr, 31)
-  poke(rf.io.wdata, 12345)
+  poke(rf.io._MEM.addr, 3)
+  poke(rf.io._MEM.data, 33333)
   step(1)
-  poke(rf.io.raddr1, 31)
-  expect(rf.io.rdata1, 12345)
+
+  poke(rf.io._ID.read1.addr, 1)
+  poke(rf.io._ID.read2.addr, 2)
+  expect(rf.io._ID.read1.data, 11111)
+  expect(rf.io._ID.read2.data, 22222)
+  poke(rf.io._ID.read1.addr, 3)
+  poke(rf.io._ID.read2.addr, 1)
+  expect(rf.io._ID.read1.data, 33333)
+  expect(rf.io._ID.read2.data, 11111)
+
+  poke(rf.io._MEM.addr, 31)
+  poke(rf.io._MEM.data, 12345)
+  step(1)
+  poke(rf.io._ID.read1.addr, 31)
+  expect(rf.io._ID.read1.data, 12345)
 }
 
 

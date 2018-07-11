@@ -43,7 +43,7 @@ class GCDUnitTester(c: GCD) extends PeekPokeTester(c) {
 
       step(steps - 1) // -1 is because we step(1) already to toggle the enable
       expect(gcd.io.outputGCD, expected_gcd)
-      expect(gcd.io.outputValid, 0)
+      expect(gcd.io.outputValid, 1)
     }
   }
 }

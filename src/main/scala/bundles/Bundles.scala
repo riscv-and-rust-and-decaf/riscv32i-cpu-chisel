@@ -53,7 +53,7 @@ class EX_MEM extends Bundle {
 
 class MEM_Reg extends Bundle {
   val addr = Output(UInt(5.W))
-  val data = Input(UInt(32.W))
+  val data = Output(UInt(32.W))
 }
 
 

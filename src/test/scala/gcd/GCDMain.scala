@@ -44,8 +44,7 @@ object GCDMain extends App {
   * test:runMain gcd.GCDRepl --help
   * }}}
   */
-/*
+
 object GCDRepl extends App {
   iotesters.Driver.executeFirrtlRepl(args, () => new GCD)
 }
-*/
