@@ -57,18 +57,54 @@ class MyRegFileTest(rf: RegFile) extends PeekPokeTester(rf) {
   expect(rf.io._ID.read1.data, 12345)
 }
 
+class MyIFTest(t: IFTestModule) extends PeekPokeTester(t) {
+  // sequential if
+  reset()
+  poke(t.io.id.if_branch, 0)
+  expect(t.io.id.pc, 0)
+  for (i <- 0 until 7) {
+    step(1)
+    expect(t.io.id.pc, i*4)
+    expect(t.io.id.inst, i*0x11110000 + (i+1)*0x00001111)
+  }
+
+  // branch
+  reset(10)   // press rst for more than a while pls
+  poke(t.io.id.if_branch, 0)
+  expect(t.io.id.pc, 0)
+  for (i <- 0 until 4) {
+    step(1)
+    expect(t.io.id.pc, i*4)
+    expect(t.io.id.inst, i*0x11110000 + (i+1)*0x00001111)
+  }
+  // 3 instr left IF
+  poke(t.io.id.if_branch, 1)
+  poke(t.io.id.branch_tar, 40)
+  step(1)
+  expect(t.io.id.pc, 4*4)
+  expect(t.io.id.inst, 0x44445555)
+  step(1)
+  expect(t.io.id.pc, 40)
+  expect(t.io.id.inst, "h_aaaa_bbbb".U) // fxxk jvm
+}
+
 
 object tester {
   def main(args: Array[String]): Unit = {
-    println("MyRegFileTest")
+    // regfile
     assert(
       iotesters.Driver.execute(args, () => new RegFile()) {
         c => new MyRegFileTest(c)
       })
-    println("MyGCDTest")
+    // traditional GCD
     assert(
       iotesters.Driver.execute(args, () => new GCD()) {
         c => new MyGCDTest(c)
+      })
+    // if
+    assert(
+      iotesters.Driver.execute(args, () => new IFTestModule()) {
+        c => new MyIFTest(c)
       })
   }
 }

@@ -7,9 +7,11 @@ import chisel3.util._
 class IF_ID extends Bundle {
   val pc   = Output(UInt(32.W))
   val inst = Output(UInt(32.W))
+  val if_branch  = Input(Bool())
+  val branch_tar = Input(UInt(32.W))
 }
 
-class _MMU extends Bundle {
+class RAMOp extends Bundle {
   val addr  = Output(UInt(32.W))
   val mode  = Output(UInt(4.W))
   val wdata = Output(UInt(32.W)) 
@@ -17,7 +19,7 @@ class _MMU extends Bundle {
   val rdata = Input(UInt(32.W))
 }
 
-class IF_MMU extends _MMU {
+class IFRAMOp extends RAMOp {
   val ifstall = Input(Bool())
 }
 
@@ -29,11 +31,6 @@ class _Reg extends Bundle {
 class ID_Reg extends Bundle {
   val read1 = new _Reg()
   val read2 = new _Reg()
-}
-
-class ID_IF extends Bundle {
-  val if_branch  = Output(Bool())
-  val branch_tar = Output(Bool())
 }
 
 class ID_EX extends Bundle {
