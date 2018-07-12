@@ -8,3 +8,8 @@ object Const {
   val MMU_MODE_LW = 1.U
   val MMU_MODE_SW = 2.U
 }
+
+object OptCode {
+  val ADD = 0.U(4.W)
+  val SUB = 1.U(4.W)
+}
