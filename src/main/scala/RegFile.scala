@@ -1,18 +1,6 @@
 import chisel3._
 import bundles._
 
-/*
-class RegFileIO extends Bundle {
-
-  val raddr1 = Input(UInt(5.W))
-  val raddr2 = Input(UInt(5.W))
-  val rdata1 = Output(UInt(32.W))
-  val rdata2 = Output(UInt(32.W))
-  val waddr  = Input(UInt(5.W))   // set to 0 if no write is needed
-  val wdata  = Input(UInt(32.W))
-}
-*/
-
 class RegFile extends Module {
   val io = IO(new Bundle {
     val _ID  = Flipped(new ID_Reg())
