@@ -26,5 +26,7 @@ class EX extends Module {
 
   io._MEM.reg_w_add := io._ID.reg_w_add
   io._MEM.opt       := io._ID.opt
+
+  io._MEM.store_data := io._ID.store_data
 } 
 

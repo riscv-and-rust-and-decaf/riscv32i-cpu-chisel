@@ -21,7 +21,7 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
 class ExTester extends ChiselFlatSpec {
     val args = Array[String]()
     //EX
-    "ex module" should "pass test" in {
+    "EX module" should "pass test" in {
       iotesters.Driver.execute(args, () => new EX()) {
         c => new EXTest(c)
       } should be (true)

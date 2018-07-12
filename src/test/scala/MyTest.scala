@@ -81,7 +81,7 @@ class  Mytester extends ChiselFlatSpec {
       } should be (true)
     }
     // IF
-    "If module" should "pass test" in {
+    "IF module" should "pass test" in {
       iotesters.Driver.execute(args, () => new IFTestModule()) {
         c => new MyIFTest(c)
       } should be (true)
