@@ -21,7 +21,7 @@ class MEM extends Module {
   io._MMU.addr  := io._EX.alu_out
   io._MMU.wdata := io._EX.store_data
   io._MMU.mode  := Mux(
-    io._EX.opt(4),
+    io._EX.opt(4).toBool,
     io._EX.opt(3,0),
     0.U(4.W)
   )

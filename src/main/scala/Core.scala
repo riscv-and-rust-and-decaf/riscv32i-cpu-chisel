@@ -25,4 +25,19 @@ class Core extends Module {
     memModule.io._MMU <> mmuModule.io._MEM
     memModule.io._Reg <> regModule.io._MEM
   }
+  .otherwise {
+    ifModule.io.ram   <> mmuModule.io.ifRam
+    ifModule.io.id    <> idModule.io.iff
+
+    idModule.io.ex   <> exModule.io._ID
+    idModule.io.reg  <> regModule.io._ID
+
+    exModule.io._MEM  <> memModule.io._EX
+
+    memModule.io._MMU <> mmuModule.io._MEM
+    memModule.io._Reg <> regModule.io._MEM
+  }
+ 
+  io.log := 5.U(32.W)
+
 }
