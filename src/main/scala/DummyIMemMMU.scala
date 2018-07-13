@@ -5,6 +5,7 @@ import bundles._
 class DummyIMemMMU extends Module {
   val io = IO(new Bundle {
     val ifRam = Flipped(new IFRAMOp())
+    val _MEM  = Flipped(new RAMOp())
   })
 
   private val imem_dummy = VecInit(
@@ -27,6 +28,8 @@ class DummyIMemMMU extends Module {
 
   io.ifRam.ifstall := false.B
   io.ifRam.rdata   := imem_dummy(io.ifRam.addr(5, 2))
+
+  io._MEM.rdata    := imem_dummy(io.ifRam.addr(5, 2))
 }
 
 
@@ -48,4 +51,8 @@ class IFTestModule extends Module {
   ifmod.io.id.branch_tar := io.id.branch_tar
 
   ifmod.io.ram <> mmu.io.ifRam
+
+  mmu.io._MEM.addr := 0.U
+  mmu.io._MEM.wdata := 0.U
+  mmu.io._MEM.mode := Const.MMU_MODE_NOP;
 }

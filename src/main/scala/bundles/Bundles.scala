@@ -36,14 +36,18 @@ class ID_Reg extends Bundle {
 class ID_EX extends Bundle {
   val oprd1 = Output(UInt(32.W))
   val oprd2 = Output(UInt(32.W))
-  val opt   = Output(UInt(4.W))
+  val opt   = Output(UInt(5.W))
+
+  var store_data = Output(UInt(32.W)) // for Store Inst only
 
   val reg_w_add = Output(UInt(5.W))
 }
 
 class EX_MEM extends Bundle {
   val alu_out = Output(UInt(32.W))
-  val opt   = Output(UInt(4.W))
+  val opt   = Output(UInt(5.W))
+  
+  var store_data = Output(UInt(32.W)) // for Store Inst only
   
   val reg_w_add = Output(UInt(32.W))
 }

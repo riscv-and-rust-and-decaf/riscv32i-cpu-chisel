@@ -117,6 +117,7 @@ class ID extends Module {
   io.ex.oprd2 := num2
   io.ex.opt := decRes(DecTable.DEC_ALUOP)
   io.ex.reg_w_add := Mux(decRes(DecTable.DEC_WREG).toBool, rdAddr, 0.U)
+  io.ex.store_data := 0.U // TODO
 
   // TODO: deal with bad instructions
 }

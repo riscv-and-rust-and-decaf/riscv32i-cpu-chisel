@@ -24,4 +24,5 @@ class IDTestModule extends Module {
   io.ex.oprd2 := id.io.ex.oprd2
   io.ex.opt := id.io.ex.opt
   io.ex.reg_w_add := id.io.ex.reg_w_add
+  io.ex.store_data := id.io.ex.store_data
 }

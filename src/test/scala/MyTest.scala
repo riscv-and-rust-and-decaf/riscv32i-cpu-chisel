@@ -3,24 +3,6 @@ import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 import firrtl_interpreter.InterpretiveTester
 // holy shxt the default tester does not allow peeking internal signals?!
 
-import gcd.GCD
-
-class MyGCDTest(gcd: GCD) extends PeekPokeTester(gcd) {
-  val a = 6
-  val b = 9
-
-  poke(gcd.io.value1, a)
-  poke(gcd.io.value2, b)
-  poke(gcd.io.loadingValues, 1)
-  step(1)
-  poke(gcd.io.loadingValues, 0)
-
-  step(100)
-
-  expect(gcd.io.outputGCD, 3)
-  expect(gcd.io.outputValid, 1)
-}
-
 
 class MyRegFileTest(rf: RegFile) extends PeekPokeTester(rf) {
   poke(rf.io._ID.read1.addr, 0)
@@ -139,28 +121,25 @@ class MyIDTest(t: IDTestModule) extends PeekPokeTester(t) {
 }
 
 
-object tester {
-  def main(args: Array[String]): Unit = {
-    // regfile
-    assert(
-      iotesters.Driver.execute(args, () => new RegFile()) {
-        c => new MyRegFileTest(c)
-      })
-    // traditional GCD
-    assert(
-      iotesters.Driver.execute(args, () => new GCD()) {
-        c => new MyGCDTest(c)
-      })
-    // if
-    assert(
-      iotesters.Driver.execute(args, () => new IFTestModule()) {
-        c => new MyIFTest(c)
-      })
-    // id
-    assert(
-      iotesters.Driver.execute(args, () => new IDTestModule()) {
-        c => new MyIDTest(c)
-      })
+class  Mytester extends ChiselFlatSpec {
+  val args = Array[String]()
+  // Regfile
+  "Regfile" should "pass test" in {
+    iotesters.Driver.execute(args, () => new RegFile()) {
+      c => new MyRegFileTest(c)
+    } should be (true)
+  }
+  // IF
+  "IF module" should "pass test" in {
+    iotesters.Driver.execute(args, () => new IFTestModule()) {
+      c => new MyIFTest(c)
+    } should be (true)
+  }
+  // ID
+  "ID module" should "pass test" in {
+    iotesters.Driver.execute(args, () => new IDTestModule()) {
+      c => new MyIDTest(c)
+    } should be (true)
   }
 }
 

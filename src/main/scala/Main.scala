@@ -1,6 +1,6 @@
 import chisel3._
-import gcd.GCD
 
+/*
 class MyTop extends Module {
   val io = IO(new Bundle {
     val sw_num1 = Input(UInt(16.W))
@@ -22,9 +22,10 @@ class MyTop extends Module {
   .otherwise         { io.num := gcd.io.outputGCD }
 
 }
+*/
 
-object Hello {
+object Gen {
   def main(args: Array[String]) : Unit = {
-    chisel3.Driver.execute(args, () => new MyTop())
+    chisel3.Driver.execute(args, () => new Core())
   }
 }
