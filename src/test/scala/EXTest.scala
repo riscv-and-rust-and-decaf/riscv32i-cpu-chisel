@@ -18,7 +18,7 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
   expect(ex.io._MEM.alu_out, 1)
 }
 
-class ExTester extends ChiselFlatSpec {
+class EXTester extends ChiselFlatSpec {
     val args = Array[String]()
     //EX
     "EX module" should "pass test" in {
