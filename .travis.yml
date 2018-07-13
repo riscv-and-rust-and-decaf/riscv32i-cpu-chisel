@@ -1,0 +1,9 @@
+language: scala
+scala:
+   - 2.11.6
+
+install: true
+
+script:
+        - sbt test
+        - sbt run
