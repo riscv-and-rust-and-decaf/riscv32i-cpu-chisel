@@ -13,6 +13,8 @@ class Core extends Module {
   val regModule = Module(new RegFile)
   val mmuModule = Module(new IMemMMU())
 
+  io.log := regModule.io.log
+
   when(true.B) {
     ifModule.io.ram   <> mmuModule.io.ifRam
     ifModule.io.id    <> idModule.io.iff
@@ -37,7 +39,5 @@ class Core extends Module {
     memModule.io._MMU <> mmuModule.io._MEM
     memModule.io._Reg <> regModule.io._MEM
   }
- 
-  io.log := 5.U(32.W)
 
 }
