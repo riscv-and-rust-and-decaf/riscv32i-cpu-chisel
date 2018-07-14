@@ -51,8 +51,13 @@ object Num1Sel {
 
 object Num2Sel {
   // num2_sel
-  val NUM2_RS2   = 1.U(2.W)
-  val NUM2_I_IMM = 2.U(2.W)
+  val NUM2_NULL  = 1.U(3.W)
+  val NUM2_RS2   = 2.U(3.W)
+  val NUM2_I_IMM = 3.U(3.W)
+  val NUM2_S_IMM = 4.U(3.W)
+  val NUM2_B_IMM = 5.U(3.W)
+  val NUM2_U_IMM = 6.U(3.W)
+  val NUM2_J_IMM = 7.U(3.W)
 }
 
 
@@ -81,7 +86,17 @@ object DecTable {
     Insts.SRL   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SRL, true.B, false.B, false.B),
     Insts.SRA   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SRA, true.B, false.B, false.B),
     Insts.OR    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.OR,  true.B, false.B, false.B),
-    Insts.AND   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.AND, true.B, false.B, false.B)
+    Insts.AND   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.AND, true.B, false.B, false.B),
+    
+    Insts.LB    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LB, true.B, false.B, false.B),
+    Insts.LH    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LH, true.B, false.B, false.B),
+    Insts.LW    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LW, true.B, false.B, false.B),
+    Insts.LBU   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LBU,true.B, false.B, false.B),
+    Insts.LHU   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LHU,true.B, false.B, false.B),
+    
+//    Insts.SB    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_S_IMM, OptCode.SB, false.B, false.B, false.B),
+//    Insts.SH    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_S_IMM, OptCode.SH, false.B, false.B, false.B),
+//    Insts.SW    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_S_IMM, OptCode.SW, false.B, false.B, false.B),
 
   )
 
