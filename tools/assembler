@@ -1,6 +1,6 @@
 #!/bin/bash
-AS=riscv64-unknown-elf-as
-OBJCOPY=riscv64-unknown-elf-objcopy
+AS=riscv32-unknown-elf-as
+OBJCOPY=riscv32-unknown-elf-objcopy
 
 fname=$1
 if [[ ${fname: -2} != ".s" ]]

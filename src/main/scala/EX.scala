@@ -11,15 +11,26 @@ class EX extends Module {
 
   val a = Wire(UInt(32.W))
   val b = Wire(UInt(32.W))
+  val low5 = Wire(UInt(5.W))
 
   a := io._ID.oprd1
   b := io._ID.oprd2
-
+  low5 := b(4, 0)
+  
+  //NOTICE: SLL,SRL,SRA only use lower 5 bits of b
   io._MEM.alu_out := MuxLookup(io._ID.opt,
     0.U(32.W),
     Seq(
-      ADD -> (a + b),
-      SUB -> (a - b)
+      ADD  -> (a + b),
+      SUB  -> (a - b),
+      SLT ->  Mux(a.asSInt < b.asSInt, 1.U, 0.U),
+      SLTU -> Mux(a.asUInt < b.asUInt, 1.U, 0.U),
+      XOR  -> (a ^ b),
+      OR   -> (a | b),
+      AND  -> (a & b),
+      SLL  -> (a << low5),
+      SRL  -> (a >> low5),
+      SRA  -> (a.asSInt >> low5).asUInt
     )
   )
 
