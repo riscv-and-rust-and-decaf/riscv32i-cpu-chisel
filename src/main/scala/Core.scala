@@ -1,43 +1,37 @@
 import chisel3._
+import bundles._
 
 
 class Core extends Module {
-  val io =IO(new Bundle {
+  val io = IO(new Bundle {
+    val idex = new ID_EX()
+    val ifinst = Output(UInt(32.W))
+    val ifpc = Output(UInt(32.W))
     val log = Output(UInt(32.W))
   })
 
-  val ifModule  = Module(new IF())
-  val idModule  = Module(new ID())
-  val exModule  = Module(new EX())
-  val memModule = Module(new MEM())
-  val regModule = Module(new RegFile)
-  val mmuModule = Module(new IMemMMU())
+  val iff  = Module(new IF())
+  val id  = Module(new ID())
+  val ex  = Module(new EX())
+  val mem = Module(new MEM())
+  val reg = Module(new RegFile)
+  val mmu = Module(new IMemMMU())
 
-  io.log := regModule.io.log
+  io.log := reg.io.log
 
-  when(true.B) {
-    ifModule.io.ram   <> mmuModule.io.ifRam
-    ifModule.io.id    <> idModule.io.iff
+  iff.io.ram   <> mmu.io.iff
+  iff.io.id    <> id.io.iff
 
-    idModule.io.ex   <> exModule.io._ID
-    idModule.io.reg  <> regModule.io._ID
+  id.io.ex   <> ex.io._ID
+  id.io.reg  <> reg.io._ID
 
-    exModule.io._MEM  <> memModule.io._EX
+  io.idex <> id.io.ex
+  io.ifinst := iff.io.id.inst
+  io.ifpc := iff.io.id.pc
 
-    memModule.io._MMU <> mmuModule.io._MEM
-    memModule.io._Reg <> regModule.io._MEM
-  }
-  .otherwise {
-    ifModule.io.ram   <> mmuModule.io.ifRam
-    ifModule.io.id    <> idModule.io.iff
+  ex.io._MEM  <> mem.io._EX
 
-    idModule.io.ex   <> exModule.io._ID
-    idModule.io.reg  <> regModule.io._ID
-
-    exModule.io._MEM  <> memModule.io._EX
-
-    memModule.io._MMU <> mmuModule.io._MEM
-    memModule.io._Reg <> regModule.io._MEM
-  }
+  mem.io._MMU <> mmu.io._MEM
+  mem.io._Reg <> reg.io._MEM
 
 }

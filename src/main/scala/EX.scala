@@ -9,13 +9,15 @@ class EX extends Module {
     val _MEM = new EX_MEM()
   })
 
-  val a = Wire(UInt(32.W))
-  val b = Wire(UInt(32.W))
-
+  val a = Reg(UInt(32.W))
   a := io._ID.oprd1
+  val b = Reg(UInt(32.W))
   b := io._ID.oprd2
+  val opt = Reg(UInt())
+  opt := io._ID.opt
 
-  io._MEM.alu_out := MuxLookup(io._ID.opt,
+
+  io._MEM.alu_out := MuxLookup(opt,
     0.U(32.W),
     Seq(
       ADD -> (a + b),
@@ -23,10 +25,12 @@ class EX extends Module {
     )
   )
 
-
-  io._MEM.reg_w_add := io._ID.reg_w_add
-  io._MEM.opt       := io._ID.opt
-
-  io._MEM.store_data := io._ID.store_data
+  val reg_w_add = Reg(UInt())
+  reg_w_add := io._ID.reg_w_add
+  io._MEM.reg_w_add := reg_w_add
+  io._MEM.opt       := opt
+  val store_data = Reg(UInt())
+  store_data := io._ID.store_data
+  io._MEM.store_data := store_data
 } 
 
