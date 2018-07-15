@@ -1,7 +1,41 @@
 #!/bin/bash
-AS=riscv32-unknown-elf-as
-OBJCOPY=riscv32-unknown-elf-objcopy
 
+## look for assembler
+if riscv64-linux-gnu-as --version >/dev/null
+then
+	AS=riscv64-linux-gnu-as
+elif riscv64-unknown-elf-as --version >/dev/null
+then
+	AS=riscv64-unknown-elf-as
+elif riscv32-unknown-elf-as --version >/dev/null
+then
+	AS=riscv32-unknown-elf-as
+else
+	echo "Cannot find assembler? Make sure you got one!"
+	echo "Contact us for support."
+	exit 1
+fi
+echo "Using assembler " ${AS}
+
+## look for objcopy
+if riscv64-linux-gnu-objcopy --version >/dev/null
+then
+	OBJCOPY=riscv64-linux-gnu-objcopy
+elif riscv64-unknown-elf-objcopy --version >/dev/null
+then
+	OBJCOPY=riscv64-unknown-elf-objcopy
+elif riscv32-unknown-elf-objcopy --version >/dev/null
+then
+	OBJCOPY=riscv32-unknown-elf-objcopy
+else
+	echo "Cannot find objcopy? Make sure you got one!"
+	echo "Contact us for support."
+	exit 1
+fi
+echo "Using objcopy " ${OBJCOPY}
+
+
+## get the job done
 fname=$1
 if [[ ${fname: -2} != ".s" ]]
 then
@@ -14,4 +48,3 @@ AS_OUTPUT="${fname%.s}.o"
 OBJCOPY_OUTPUT="${fname%.s}.bin"
 ${AS} $fname -o ${AS_OUTPUT}
 ${OBJCOPY} -O binary -j .text ${AS_OUTPUT} ${OBJCOPY_OUTPUT}
-hd ${OBJCOPY_OUTPUT}
