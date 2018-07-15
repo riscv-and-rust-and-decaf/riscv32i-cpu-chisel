@@ -9,13 +9,13 @@ class EX extends Module {
     val _MEM = new EX_MEM()
   })
 
-  val a = Reg(UInt(32.W))
+  val a = RegInit(0.U(32.W))
   a := io._ID.oprd1
-  val b = Reg(UInt(32.W))
+  val b = RegInit(0.U(32.W))
   b := io._ID.oprd2
   val low5 = Wire(UInt(5.W))
   low5 := b(4, 0)
-  val opt = Reg(UInt())
+  val opt = RegInit(OptCode.ADD)
   opt := io._ID.opt
   
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
@@ -35,11 +35,11 @@ class EX extends Module {
     )
   )
 
-  val reg_w_add = Reg(UInt())
+  val reg_w_add = RegInit(0.U(5.W))
   reg_w_add := io._ID.reg_w_add
   io._MEM.reg_w_add := reg_w_add
   io._MEM.opt       := opt
-  val store_data = Reg(UInt())
+  val store_data = RegInit(0.U(32.W))
   store_data := io._ID.store_data
   io._MEM.store_data := store_data
 } 

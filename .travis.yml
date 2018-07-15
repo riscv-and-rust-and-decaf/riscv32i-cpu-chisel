@@ -5,5 +5,6 @@ scala:
 install: true
 
 script:
+        - make -C test_asm
         - sbt test
         - sbt run

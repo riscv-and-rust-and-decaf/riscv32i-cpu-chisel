@@ -9,9 +9,9 @@ class ID extends Module {
     val ex = new ID_EX()
   })
 
-  val inst = Reg(UInt())
+  val inst = RegInit(Const.NOP_INST)
   inst := io.iff.inst
-  val pc = Reg(UInt())
+  val pc = RegInit(0.U(32.W))
   pc := io.iff.pc
 
   // parse instruction
@@ -51,11 +51,4 @@ class ID extends Module {
   io.ex.store_data := 0.U // TODO
 
   // TODO: deal with bad instructions (illegal), raise exception.
-  when (true.B) {
-    printf("[ID] got pc=%d\n", pc)
-    printf("[ID] got inst=%d\n", inst)
-    printf("[ID] got oprd1=%d\n", oprd1)
-    printf("[ID] got oprd2=%d\n", oprd2)
-  }
-
 }

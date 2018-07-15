@@ -7,7 +7,7 @@ class Core extends Module {
     val idex = new ID_EX()
     val ifinst = Output(UInt(32.W))
     val ifpc = Output(UInt(32.W))
-    val log = Output(UInt(32.W))
+    val log = Output(Vec(32, UInt(32.W)))
   })
 
   val iff  = Module(new IF())
