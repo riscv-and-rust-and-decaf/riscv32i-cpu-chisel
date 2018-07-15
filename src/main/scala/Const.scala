@@ -43,56 +43,51 @@ object OptCode {
 }
 
 
-object Num1Sel {
-  // num1_sel
-  val NUM1_RS1  = 1.U(1.W)
+object InstType {
+  // R,I,S,B,U,J
+  val BAD = 0.U(3.W)
+  val R = 1.U(3.W)
+  val I = 2.U(3.W)
+  val S = 2.U(3.W)
+  val B = 3.U(3.W)
+  val U = 4.U(3.W)
+  val J = 5.U(3.W)
 }
 
-
-object Num2Sel {
-  // num2_sel
-  val NUM2_NULL  = 1.U(3.W)
-  val NUM2_RS2   = 2.U(3.W)
-  val NUM2_I_IMM = 3.U(3.W)
-  val NUM2_S_IMM = 4.U(3.W)
-  val NUM2_B_IMM = 5.U(3.W)
-  val NUM2_U_IMM = 6.U(3.W)
-  val NUM2_J_IMM = 7.U(3.W)
-}
 
 
 object DecTable {
   // default decode signals
   val defaultDec =
-                   List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.ADD, false.B, false.B, true.B)
-  //                    num1-sel          num2-sel          aluop        wreg?    branch?  bad?
+                   List(InstType.BAD, OptCode.ADD)
+
   val decMap = Array(
-    Insts.ADDI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.ADD, true.B, false.B, false.B),
-    Insts.SLTI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.SLT, true.B, false.B, false.B),
-    Insts.SLTIU -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.SLTU,true.B, false.B, false.B),
-    Insts.XORI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.XOR, true.B, false.B, false.B),
-    Insts.ORI   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.OR , true.B, false.B, false.B),
-    Insts.ANDI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.AND, true.B, false.B, false.B),
-    Insts.SLLI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.SLL, true.B, false.B, false.B),
-    Insts.SRLI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.SRL, true.B, false.B, false.B),
-    Insts.SRAI  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.SRA, true.B, false.B, false.B),
+    Insts.ADDI  -> List(InstType.I, OptCode.ADD),
+    Insts.SLTI  -> List(InstType.I, OptCode.SLT),
+    Insts.SLTIU -> List(InstType.I, OptCode.SLTU),
+    Insts.XORI  -> List(InstType.I, OptCode.XOR),
+    Insts.ORI   -> List(InstType.I, OptCode.OR),
+    Insts.ANDI  -> List(InstType.I, OptCode.AND),
+    Insts.SLLI  -> List(InstType.I, OptCode.SLL),
+    Insts.SRLI  -> List(InstType.I, OptCode.SRL),
+    Insts.SRAI  -> List(InstType.I, OptCode.SRA),
     
-    Insts.ADD   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.ADD, true.B, false.B, false.B),
-    Insts.SUB   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SUB, true.B, false.B, false.B),
-    Insts.SLL   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SLL, true.B, false.B, false.B),
-    Insts.SLT   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SLT, true.B, false.B, false.B),
-    Insts.SLTU  -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SLTU,true.B, false.B, false.B),
-    Insts.XOR   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.XOR, true.B, false.B, false.B),
-    Insts.SRL   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SRL, true.B, false.B, false.B),
-    Insts.SRA   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.SRA, true.B, false.B, false.B),
-    Insts.OR    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.OR,  true.B, false.B, false.B),
-    Insts.AND   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_RS2, OptCode.AND, true.B, false.B, false.B),
+    Insts.ADD   -> List(InstType.R, OptCode.ADD),
+    Insts.SUB   -> List(InstType.R, OptCode.SUB),
+    Insts.SLL   -> List(InstType.R, OptCode.SLL),
+    Insts.SLT   -> List(InstType.R, OptCode.SLT),
+    Insts.SLTU  -> List(InstType.R, OptCode.SLTU),
+    Insts.XOR   -> List(InstType.R, OptCode.XOR),
+    Insts.SRL   -> List(InstType.R, OptCode.SRL),
+    Insts.SRA   -> List(InstType.R, OptCode.SRA),
+    Insts.OR    -> List(InstType.R, OptCode.OR),
+    Insts.AND   -> List(InstType.R, OptCode.AND),
     
-    Insts.LB    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LB, true.B, false.B, false.B),
-    Insts.LH    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LH, true.B, false.B, false.B),
-    Insts.LW    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LW, true.B, false.B, false.B),
-    Insts.LBU   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LBU,true.B, false.B, false.B),
-    Insts.LHU   -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_I_IMM, OptCode.LHU,true.B, false.B, false.B),
+    Insts.LB    -> List(InstType.I, OptCode.LB),
+    Insts.LH    -> List(InstType.I, OptCode.LH),
+    Insts.LW    -> List(InstType.I, OptCode.LW),
+    Insts.LBU   -> List(InstType.I, OptCode.LBU),
+    Insts.LHU   -> List(InstType.I, OptCode.LHU)
     
 //    Insts.SB    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_S_IMM, OptCode.SB, false.B, false.B, false.B),
 //    Insts.SH    -> List(Num1Sel.NUM1_RS1, Num2Sel.NUM2_S_IMM, OptCode.SH, false.B, false.B, false.B),
@@ -101,22 +96,18 @@ object DecTable {
   )
 
   // fields
-  val NUM1_SEL = 0
-  val NUM2_SEL = 1
-  val OPT = 2
-  val WREG = 3
-  val BR = 4
-  val BAD = 5
+  val TYPE = 0
+  val OPT = 1
 }
 
 
 object Insts { // idea from mini riscv
 //  // Loads
-//  def LB     = BitPat("b?????????????????000?????0000011")
-//  def LH     = BitPat("b?????????????????001?????0000011")
-//  def LW     = BitPat("b?????????????????010?????0000011")
-//  def LBU    = BitPat("b?????????????????100?????0000011")
-//  def LHU    = BitPat("b?????????????????101?????0000011")
+  def LB     = BitPat("b?????????????????000?????0000011")
+  def LH     = BitPat("b?????????????????001?????0000011")
+  def LW     = BitPat("b?????????????????010?????0000011")
+  def LBU    = BitPat("b?????????????????100?????0000011")
+  def LHU    = BitPat("b?????????????????101?????0000011")
 //  // Stores
 //  def SB     = BitPat("b?????????????????000?????0100011")
 //  def SH     = BitPat("b?????????????????001?????0100011")

@@ -2,7 +2,7 @@ import chisel3._
 import bundles._
 import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 
-
+/*
 class IDTestModule extends Module {
   val io = IO(new Bundle {
     val iff = Flipped(new IF_ID())  // tester acts as ID
@@ -60,6 +60,29 @@ class IDTester extends ChiselFlatSpec {
     val args = Array[String]()
     "ID module" should "pass test" in {
       iotesters.Driver.execute(args, () => new IDTestModule()) {
+        c => new IDTest(c)
+      } should be (true)
+    }
+}
+*/
+
+class IDTest(t: ID) extends PeekPokeTester(t) {
+  poke(t.io.iff.inst, "b111111111110_00001_010_00010_0010011".U)
+  poke(t.io.reg.read1.data,7)
+  poke(t.io.reg.read2.data,8)
+  step(1)
+  
+  expect(t.io.im_log, -2)
+
+  expect(t.io.ex.oprd1, 7)
+  expect(t.io.ex.oprd2, "h_ffff_fffe".U)
+  expect(t.io.ex.opt, OptCode.SLT)
+}
+
+class IDTester extends ChiselFlatSpec {
+    val args = Array[String]()
+    "new ID module" should "pass test" in {
+      iotesters.Driver.execute(args, () => new ID()) {
         c => new IDTest(c)
       } should be (true)
     }
