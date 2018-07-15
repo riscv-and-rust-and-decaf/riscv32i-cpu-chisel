@@ -1,6 +1,6 @@
 #!/bin/bash
-AS=riscv32-unknown-elf-as
-OBJCOPY=riscv32-unknown-elf-objcopy
+AS=../riscv32-unknown-elf-as
+OBJCOPY=../riscv32-unknown-elf-objcopy
 
 fname=$1
 if [[ ${fname: -2} != ".s" ]]
@@ -14,4 +14,3 @@ AS_OUTPUT="${fname%.s}.o"
 OBJCOPY_OUTPUT="${fname%.s}.bin"
 ${AS} $fname -o ${AS_OUTPUT}
 ${OBJCOPY} -O binary -j .text ${AS_OUTPUT} ${OBJCOPY_OUTPUT}
-hd ${OBJCOPY_OUTPUT}

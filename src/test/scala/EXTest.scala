@@ -7,14 +7,13 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
   poke(ex.io._ID.oprd1, 7)
   poke(ex.io._ID.oprd2, 3)
   poke(ex.io._ID.opt, ADD)
-
-  expect(ex.io._MEM.alu_out, 10)
   step(1)
+  expect(ex.io._MEM.alu_out, 10)
   
   poke(ex.io._ID.oprd1, 5)
   poke(ex.io._ID.oprd2, 4)
   poke(ex.io._ID.opt, SUB)
-
+  step(1)
   expect(ex.io._MEM.alu_out, 1)
 }
 

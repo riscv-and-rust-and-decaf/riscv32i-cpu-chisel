@@ -8,12 +8,23 @@ class ID extends Module {
     val reg = new ID_Reg()
     val ex = new ID_EX()
 
+    val wrRegOp = Output(new WrRegOp())
+
+    // forwarding
+    val exWrRegOp = Input(new WrRegOp())
+    val memWrRegOp = Input(new WrRegOp())
+    val wbWrRegOp = Input(new WrRegOp())
+    
     val im_log = Output(SInt(32.W))
   })
+  
+  val inst = RegInit(Const.NOP_INST)
+  inst := io.iff.inst
+  val pc = RegInit(0.U(32.W))
+  pc := io.iff.pc
 
-  val inst = io.iff.inst
   val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
-  val It = decRes(DecTable.TYPE)
+  val it = decRes(DecTable.TYPE)
   
   val rs1Addr  = inst(19, 15)
   val rs2Addr  = inst(24, 20)
@@ -26,32 +37,59 @@ class ID extends Module {
   io.iff.if_branch  := false.B
   io.iff.branch_tar := 0.U
 
-  io.reg.read1.addr := rs1Addr
-  val rs1Val = io.reg.read1.data
-  io.reg.read2.addr := rs2Addr
-  val rs2Val = io.reg.read2.data
-
   io.ex.oprd1 := 0.U
   io.ex.oprd2 := 0.U
   io.ex.opt := decRes(DecTable.OPT)
   io.ex.store_data := 0.U
-  io.ex.reg_w_add := 0.U
+  val w_reg_addr = Wire(UInt(5.W))
+  w_reg_addr := 0.U
 
   imm := 0.S
+  
+  //Get regVar and  forwarding
+  
+  io.reg.read1.addr := rs1Addr
+  io.reg.read2.addr := rs2Addr
+  
+  val exWrRegOp = Wire(new WrRegOp())
+  exWrRegOp := io.exWrRegOp
+  val memWrRegOp = Wire(new WrRegOp())
+  memWrRegOp := io.memWrRegOp
+  val wbWrRegOp = Wire(new WrRegOp())
+  wbWrRegOp := io.wbWrRegOp
+  // TODO: check rdy
+  val rs1Val = Mux(rs1Addr.orR,
+    Mux(exWrRegOp.addr === rs1Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs1Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs1Addr,
+          wbWrRegOp.data,
+          io.reg.read1.data))),
+    0.U)
+  val rs2Val = Mux(rs2Addr.orR,
+    Mux(exWrRegOp.addr === rs2Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs2Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs2Addr,
+          wbWrRegOp.data,
+          io.reg.read2.data))),
+    0.U)
+  
   // deal with different kind inst
 
-
-  switch(It) {
+  switch(it) {
     is(InstType.R) {
       io.ex.oprd1 := rs1Val
       io.ex.oprd2 := rs2Val
-      io.ex.reg_w_add := rdAddr
+      w_reg_addr := rdAddr
     }
     is(InstType.I) {
       imm := inst(31,20).asSInt
       io.ex.oprd1 := rs1Val
       io.ex.oprd2 := imm.asUInt
-      io.ex.reg_w_add := rdAddr
+      w_reg_addr := rdAddr
 
       when(decRes(DecTable.OPT) === OptCode.JALR) {
         io.iff.branch_tar := (imm.asUInt + rs1Val ) & (~ 1.U(32.W))
@@ -85,7 +123,7 @@ class ID extends Module {
       val ut = decRes(DecTable.OPT)
       io.ex.oprd2 := Mux(ut(0), io.iff.pc, 0.U)
       io.ex.opt   := OptCode.ADD
-      io.ex.reg_w_add := rdAddr
+      w_reg_addr := rdAddr
     }
     is(InstType.J) {
       imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U).asSInt
@@ -95,29 +133,64 @@ class ID extends Module {
       io.ex.oprd1 := io.iff.pc
       io.ex.oprd2 := 4.U
       //io.ex.opt   := OptCode.ADD //not necessary
-      io.ex.reg_w_add := rdAddr 
+      w_reg_addr := rdAddr 
     }
     is(InstType.BAD) {
       //TODO
     }
   }
+  
+  io.wrRegOp.addr := w_reg_addr
+  io.wrRegOp.data := 0.U
+  io.wrRegOp.rdy  := false.B
+  
 /*  
+=======
+
+  
+
+>>>>>>> master
   // parse instruction
-  val rs1Addr  = io.iff.inst(19, 15)
-  val rs2Addr  = io.iff.inst(24, 20)
-  val rdAddr   = io.iff.inst(11, 7)
+  val rs1Addr  = inst(19, 15)
+  val rs2Addr  = inst(24, 20)
+  val rdAddr   = inst(11, 7)
 
   // read immediate + sign/zero extend
   val iImm = Wire(SInt(32.W))
-  iImm := io.iff.inst(31, 20).asSInt
+  iImm := inst(31, 20).asSInt
 
   // read registers
   io.reg.read1.addr := rs1Addr
   io.reg.read2.addr := rs2Addr
-  val rs1val = io.reg.read1.data
-  val rs2val = io.reg.read2.data
+  // don't use Reg here
+  val exWrRegOp = Wire(new WrRegOp())
+  exWrRegOp := io.exWrRegOp
+  val memWrRegOp = Wire(new WrRegOp())
+  memWrRegOp := io.memWrRegOp
+  val wbWrRegOp = Wire(new WrRegOp())
+  wbWrRegOp := io.wbWrRegOp
+  // TODO: check rdy
+  val rs1val = Mux(rs1Addr.orR,
+    Mux(exWrRegOp.addr === rs1Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs1Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs1Addr,
+          wbWrRegOp.data,
+          io.reg.read1.data))),
+    0.U)
+  val rs2val = Mux(rs2Addr.orR,
+    Mux(exWrRegOp.addr === rs2Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs2Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs2Addr,
+          wbWrRegOp.data,
+          io.reg.read2.data))),
+    0.U)
 
   // decode control signals
+<<<<<<< HEAD
   val decRes = ListLookup(io.iff.inst, DecTable.defaultDec, DecTable.decMap)
 
   val InstType = decRes(DecTable.TYPE)
@@ -127,6 +200,9 @@ class ID extends Module {
   .otherwise {
   }
 
+=======
+  val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
+>>>>>>> master
   val oprd1 = MuxLookup(decRes(DecTable.NUM1_SEL), 0.U(32.W), Seq(
       Num1Sel.NUM1_RS1 -> rs1val
   ))
@@ -143,7 +219,6 @@ class ID extends Module {
   io.ex.oprd1 := oprd1
   io.ex.oprd2 := oprd2
   io.ex.opt := decRes(DecTable.OPT)
-  io.ex.reg_w_add := Mux(decRes(DecTable.WREG).toBool, rdAddr, 0.U)
   io.ex.store_data := 0.U // TODO
 
   // TODO: deal with bad instructions (illegal), raise exception.

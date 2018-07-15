@@ -20,7 +20,7 @@ class IFTestModule extends Module {
   ifmod.io.id.if_branch := io.id.if_branch 
   ifmod.io.id.branch_tar := io.id.branch_tar
 
-  ifmod.io.ram <> mmu.io.ifRam
+  ifmod.io.ram <> mmu.io.iff
 
   mmu.io._MEM.addr := 0.U
   mmu.io._MEM.wdata := 0.U

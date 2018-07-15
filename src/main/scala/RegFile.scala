@@ -6,19 +6,27 @@ class RegFile extends Module {
     val _ID  = Flipped(new ID_Reg())
     val _MEM = Flipped(new MEM_Reg())
 
-    val log = Output(UInt(32.W))
+    // fxxk the chisel people, can't they add a tester
+    //  that is able to peek internal signals? crap!
+    val log = Output(Vec(32, UInt(32.W)))
   })
 
   val regs = Mem(32, UInt(32.W))
 
   regs(0.U) := 0.U
 
+  // reads are not clocked
   io._ID.read1.data := regs(io._ID.read1.addr)
   io._ID.read2.data := regs(io._ID.read2.addr)
 
-  when (io._MEM.addr.orR) {
-    regs(io._MEM.addr) := io._MEM.data;
+  val addr = Wire(UInt())
+  addr := io._MEM.addr
+  val data = Wire(UInt())
+  data := io._MEM.data
+  when (addr.orR) { // write gate happens here
+    regs(addr) := data
   }
 
-  io.log := regs(1.U)
+  for (i <- 0 until 32)
+    io.log(i) := regs(i.U)
 }

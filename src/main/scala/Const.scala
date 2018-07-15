@@ -8,7 +8,7 @@ import chisel3.util._
 
 object Const {
   val PC_INIT = 0.U(32.W)
-  val NOP_INST = "h_0000_0013".U
+  val NOP_INST = "h_0000_0013".U(32.W)
 
   val MMU_MODE_NOP = "b0000".U
   val MMU_MODE_LW  = "b1000".U
