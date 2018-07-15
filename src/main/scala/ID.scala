@@ -7,6 +7,7 @@ class ID extends Module {
     val iff = Flipped(new IF_ID())  // naming conflict if use `if`
     val reg = new ID_Reg()
     val ex = new ID_EX()
+    val wrRegOp = Output(new WrRegOp())
   })
 
   val inst = RegInit(Const.NOP_INST)
@@ -47,8 +48,10 @@ class ID extends Module {
   io.ex.oprd1 := oprd1
   io.ex.oprd2 := oprd2
   io.ex.opt := decRes(DecTable.OPT)
-  io.ex.reg_w_add := Mux(decRes(DecTable.WREG).toBool, rdAddr, 0.U)
   io.ex.store_data := 0.U // TODO
 
+  io.wrRegOp.addr := Mux(decRes(DecTable.WREG).toBool, rdAddr, 0.U)
+  io.wrRegOp.data := 0.U
+  io.wrRegOp.rdy  := false.B
   // TODO: deal with bad instructions (illegal), raise exception.
 }

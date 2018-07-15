@@ -7,6 +7,7 @@ class IDTestModule extends Module {
   val io = IO(new Bundle {
     val iff = Flipped(new IF_ID())  // tester acts as ID
     val ex = new ID_EX()
+    val wrRegOp = Output(new WrRegOp())
     val regw = Flipped(new MEM_Reg())
   })
 
@@ -24,7 +25,7 @@ class IDTestModule extends Module {
   io.ex.oprd1 := id.io.ex.oprd1
   io.ex.oprd2 := id.io.ex.oprd2
   io.ex.opt := id.io.ex.opt
-  io.ex.reg_w_add := id.io.ex.reg_w_add
+  io.wrRegOp <> id.io.wrRegOp
   io.ex.store_data := id.io.ex.store_data
 }
 
@@ -50,7 +51,7 @@ class IDTest(t: IDTestModule) extends PeekPokeTester(t) {
     expect(t.io.ex.oprd1, tc(1))
     expect(t.io.ex.oprd2, tc(2))
     expect(t.io.ex.opt, tc(3))
-    expect(t.io.ex.reg_w_add, tc(4))
+    expect(t.io.wrRegOp.addr, tc(4))
     expect(t.io.iff.if_branch, tc(5))
     expect(t.io.iff.branch_tar, tc(6))
   }

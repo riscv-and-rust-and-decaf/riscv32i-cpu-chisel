@@ -7,6 +7,8 @@ class EX extends Module {
   val io = IO(new Bundle {
     val _ID  = Flipped(new ID_EX())
     val _MEM = new EX_MEM()
+    val idWrRegOp = Input(new WrRegOp())
+    val wrRegOp = Output(new WrRegOp())
   })
 
   val a = RegInit(0.U(32.W))
@@ -17,9 +19,9 @@ class EX extends Module {
   low5 := b(4, 0)
   val opt = RegInit(OptCode.ADD)
   opt := io._ID.opt
-  
+
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
-  io._MEM.alu_out := MuxLookup(opt,
+  val aluRes = MuxLookup(opt,
     0.U(32.W),
     Seq(
       ADD  -> (a + b),
@@ -34,13 +36,19 @@ class EX extends Module {
       SRA  -> (a.asSInt >> low5).asUInt
     )
   )
+  io._MEM.alu_out := aluRes
 
-  val reg_w_add = RegInit(0.U(5.W))
-  reg_w_add := io._ID.reg_w_add
-  io._MEM.reg_w_add := reg_w_add
+  val wregAddr = RegInit(0.U(5.W))
+  wregAddr := io.idWrRegOp.addr
+  io.wrRegOp.addr := wregAddr
+  io.wrRegOp.data := aluRes
+  io.wrRegOp.rdy  := Mux(
+    (opt & OptCode.LW) === OptCode.LW,
+    false.B,
+    true.B)
+
   io._MEM.opt       := opt
   val store_data = RegInit(0.U(32.W))
   store_data := io._ID.store_data
   io._MEM.store_data := store_data
-} 
-
+}
