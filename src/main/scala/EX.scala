@@ -19,18 +19,27 @@ class EX extends Module {
   
   //NOTICE: SLL,SRL,SRA only use lower 5 bits of b
   io._MEM.alu_out := MuxLookup(io._ID.opt,
-    0.U(32.W),
+    (a + b),
     Seq(
       ADD  -> (a + b),
       SUB  -> (a - b),
       SLT ->  Mux(a.asSInt < b.asSInt, 1.U, 0.U),
-      SLTU -> Mux(a.asUInt < b.asUInt, 1.U, 0.U),
+      SLTU -> Mux(a < b, 1.U, 0.U),
       XOR  -> (a ^ b),
       OR   -> (a | b),
       AND  -> (a & b),
       SLL  -> (a << low5),
       SRL  -> (a >> low5),
       SRA  -> (a.asSInt >> low5).asUInt
+/*
+      LW   -> (a + b),
+      LB   -> (a + b),
+      LH   -> (a + b),
+      LBU  -> (a + b),
+      LHU  -> (a + b),
+
+      SB   -> ()
+*/ //not necessary, all rest (a+b)
     )
   )
 

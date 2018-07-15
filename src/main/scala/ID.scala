@@ -52,6 +52,15 @@ class ID extends Module {
       io.ex.oprd1 := rs1Val
       io.ex.oprd2 := imm.asUInt
       io.ex.reg_w_add := rdAddr
+
+      when(decRes(DecTable.OPT) === OptCode.JALR) {
+        io.iff.branch_tar := (imm.asUInt + rs1Val ) & (~ 1.U(32.W))
+        io.iff.if_branch  := true.B
+
+        io.ex.oprd1 := io.iff.pc
+        io.ex.oprd2 := 4.U
+        io.ex.opt   := OptCode.ADD
+      }
     }
     is(InstType.S) {
       imm := Cat(inst(31,25), inst(11,7)).asSInt
@@ -68,10 +77,25 @@ class ID extends Module {
       val e = (rs1Val === rs2Val)
       io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
-      //io.ex.opt := OptCode.ADD //not necessary but better for understand 
+      io.ex.opt := OptCode.ADD 
     }
     is(InstType.U) {
+      imm := (inst & "h_fffff000".U).asSInt
+      io.ex.oprd1 := imm.asUInt;
+      val ut = decRes(DecTable.OPT)
+      io.ex.oprd2 := Mux(ut(0), io.iff.pc, 0.U)
+      io.ex.opt   := OptCode.ADD
+      io.ex.reg_w_add := rdAddr
+    }
+    is(InstType.J) {
+      imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U).asSInt
+      io.iff.branch_tar := io.iff.pc + imm.asUInt
+      io.iff.if_branch  := true.B
 
+      io.ex.oprd1 := io.iff.pc
+      io.ex.oprd2 := 4.U
+      //io.ex.opt   := OptCode.ADD //not necessary
+      io.ex.reg_w_add := rdAddr 
     }
     is(InstType.BAD) {
       //TODO
