@@ -15,7 +15,15 @@ class IDTestModule extends Module {
   reg.io._MEM.addr := io.regw.addr
   reg.io._MEM.data := io.regw.data
 
+  val emptyWrRegOp = Wire(new WrRegOp())
+  emptyWrRegOp.addr := 0.U
+  emptyWrRegOp.data := 0.U
+  emptyWrRegOp.rdy  := false.B
+
   val id = Module(new ID())
+  id.io.exWrRegOp <> emptyWrRegOp
+  id.io.memWrRegOp <> emptyWrRegOp
+  id.io.wbWrRegOp <> emptyWrRegOp
   id.io.iff.pc := io.iff.pc
   id.io.iff.inst := io.iff.inst
   io.iff.if_branch := id.io.iff.if_branch

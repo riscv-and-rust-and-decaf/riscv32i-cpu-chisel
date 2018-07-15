@@ -26,6 +26,9 @@ class Core extends Module {
   id.io.ex   <> ex.io._ID
   id.io.reg  <> reg.io._ID
   id.io.wrRegOp <> ex.io.idWrRegOp
+  id.io.exWrRegOp <> ex.io.wrRegOp
+  id.io.memWrRegOp <> mem.io.wrRegOp
+  id.io.wbWrRegOp <> wb.io.wrRegOp
 
   io.idex <> id.io.ex
   io.ifinst := iff.io.id.inst
