@@ -10,11 +10,7 @@ class IF extends Module {
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
-  val npc = Mux(io.ram.ifstall,
-    pc,
-    Mux(io.id.if_branch,
-      io.id.branch_tar,
-      pc + 4.U))
+  val npc = pc + 4.U
   pc := npc; // happens on ff
 
   // instruction fetch
@@ -25,7 +21,7 @@ class IF extends Module {
 
   // feed to ID
   io.id.pc   := pc
-  io.id.inst := Mux(io.ram.ifstall,
-    Const.NOP_INST,
-    io.ram.rdata)
+  io.id.inst := io.ram.rdata 
+
+  // TODO: branching
 }

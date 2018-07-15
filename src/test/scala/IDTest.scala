@@ -46,6 +46,7 @@ class IDTest(t: IDTestModule) extends PeekPokeTester(t) {
 
   for (tc <- testcases) {
     poke(t.io.iff.inst, tc(0))
+    step(1)
     expect(t.io.ex.oprd1, tc(1))
     expect(t.io.ex.oprd2, tc(2))
     expect(t.io.ex.opt, tc(3))

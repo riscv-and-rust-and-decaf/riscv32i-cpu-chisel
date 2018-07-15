@@ -3,7 +3,10 @@ import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 
 
 class CoreTest(c: Core) extends PeekPokeTester(c) {
-  step(30)
+  for (i <- 1 to 30) {
+    println(s"\n\n\ncycle: $i")
+    step(1)
+  }
   expect(c.io.log, 9)
 }
 

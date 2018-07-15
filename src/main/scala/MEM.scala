@@ -11,18 +11,27 @@ class MEM extends Module {
     val _MMU = new RAMOp()
   })
 
-  io._Reg.addr := io._EX.reg_w_add
+  val reg_w_add = Reg(UInt())
+  reg_w_add := io._EX.reg_w_add
+  val opt = Reg(UInt())
+  opt := io._EX.opt
+  val alu_out = Reg(UInt())
+  alu_out := io._EX.alu_out
+  val store_data = Reg(UInt())
+  store_data := io._EX.store_data
+
+  io._Reg.addr := reg_w_add
   io._Reg.data := Mux(
-    (io._EX.opt & OptCode.LW) === OptCode.LW,
+    (opt & OptCode.LW) === OptCode.LW,
     io._MMU.rdata,
-    io._EX.alu_out
+    alu_out
   )
 
-  io._MMU.addr  := io._EX.alu_out
-  io._MMU.wdata := io._EX.store_data
+  io._MMU.addr  := alu_out
+  io._MMU.wdata := store_data
   io._MMU.mode  := Mux(
-    io._EX.opt(4).toBool,
-    io._EX.opt(3,0),
+    opt(4).toBool,
+    opt(3,0),
     0.U(4.W)
   )
 }

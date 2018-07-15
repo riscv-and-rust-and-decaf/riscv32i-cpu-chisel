@@ -9,14 +9,19 @@ class ID extends Module {
     val ex = new ID_EX()
   })
 
+  val inst = Reg(UInt())
+  inst := io.iff.inst
+  val pc = Reg(UInt())
+  pc := io.iff.pc
+
   // parse instruction
-  val rs1Addr  = io.iff.inst(19, 15)
-  val rs2Addr  = io.iff.inst(24, 20)
-  val rdAddr   = io.iff.inst(11, 7)
+  val rs1Addr  = inst(19, 15)
+  val rs2Addr  = inst(24, 20)
+  val rdAddr   = inst(11, 7)
 
   // read immediate + sign/zero extend
   val iImm = Wire(SInt(32.W))
-  iImm := io.iff.inst(31, 20).asSInt
+  iImm := inst(31, 20).asSInt
 
   // read registers
   io.reg.read1.addr := rs1Addr
@@ -25,7 +30,7 @@ class ID extends Module {
   val rs2val = io.reg.read2.data
 
   // decode control signals
-  val decRes = ListLookup(io.iff.inst, DecTable.defaultDec, DecTable.decMap)
+  val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
   val oprd1 = MuxLookup(decRes(DecTable.NUM1_SEL), 0.U(32.W), Seq(
       Num1Sel.NUM1_RS1 -> rs1val
   ))
@@ -46,4 +51,11 @@ class ID extends Module {
   io.ex.store_data := 0.U // TODO
 
   // TODO: deal with bad instructions (illegal), raise exception.
+  when (true.B) {
+    printf("[ID] got pc=%d\n", pc)
+    printf("[ID] got inst=%d\n", inst)
+    printf("[ID] got oprd1=%d\n", oprd1)
+    printf("[ID] got oprd2=%d\n", oprd2)
+  }
+
 }
