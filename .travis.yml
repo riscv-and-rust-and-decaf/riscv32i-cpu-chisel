@@ -2,7 +2,11 @@ language: scala
 scala:
    - 2.11.6
 
-install: true
+install:
+        - wget https://hereiszyn.com/tools/riscv32-unknown-elf-objcopy
+        - chmod +x riscv32-unknown-elf-objcopy
+        - wget https://hereiszyn.com/tools/riscv32-unknown-elf-as
+        - chmod +x riscv32-unknown-elf-as
 
 script:
         - make -C test_asm
