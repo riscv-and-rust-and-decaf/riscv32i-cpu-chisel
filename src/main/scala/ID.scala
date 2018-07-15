@@ -11,12 +11,13 @@ class ID extends Module {
     val im_log = Output(SInt(32.W))
   })
 
-  val decRes = ListLookup(io.iff.inst, DecTable.defaultDec, DecTable.decMap)
+  val inst = io.iff.inst
+  val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
   val It = decRes(DecTable.TYPE)
   
-  val rs1Addr  = io.iff.inst(19, 15)
-  val rs2Addr  = io.iff.inst(24, 20)
-  val rdAddr   = io.iff.inst(11, 7)
+  val rs1Addr  = inst(19, 15)
+  val rs2Addr  = inst(24, 20)
+  val rdAddr   = inst(11, 7)
   
   val imm = Wire(SInt(32.W))
   io.im_log := imm
@@ -47,12 +48,29 @@ class ID extends Module {
       io.ex.reg_w_add := rdAddr
     }
     is(InstType.I) {
+      imm := inst(31,20).asSInt
       io.ex.oprd1 := rs1Val
-      imm := io.iff.inst(31,20).asSInt
       io.ex.oprd2 := imm.asUInt
       io.ex.reg_w_add := rdAddr
     }
     is(InstType.S) {
+      imm := Cat(inst(31,25), inst(11,7)).asSInt
+      io.ex.oprd1 := rs1Val
+      io.ex.oprd2 := imm.asUInt
+      io.ex.store_data := rs2Val
+    }
+    is(InstType.B) {
+      imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U).asSInt
+      io.iff.branch_tar := io.iff.pc + imm.asUInt
+      val bt = decRes(DecTable.OPT)
+      val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
+      val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
+      val e = (rs1Val === rs2Val)
+      io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
+
+      //io.ex.opt := OptCode.ADD //not necessary but better for understand 
+    }
+    is(InstType.U) {
 
     }
     is(InstType.BAD) {
