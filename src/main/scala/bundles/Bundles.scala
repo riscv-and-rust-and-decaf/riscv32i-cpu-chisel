@@ -3,6 +3,12 @@ package bundles
 import chisel3._
 import chisel3.util._
 
+// repesents an operation of "writing registers"
+class WrRegOp extends Bundle {
+  val addr = UInt(5.W)  // which register to write? if 0, then don't write
+  val data = UInt(32.W)
+  val rdy  = Bool()     // data might be ready in different stages e.g. EX and MEM
+}
 
 class IF_ID extends Bundle {
   val pc   = Output(UInt(32.W))
@@ -39,8 +45,6 @@ class ID_EX extends Bundle {
   val opt   = Output(UInt(5.W))
 
   var store_data = Output(UInt(32.W)) // for Store Inst only
-
-  val reg_w_add = Output(UInt(5.W))
 }
 
 class EX_MEM extends Bundle {
@@ -48,14 +52,10 @@ class EX_MEM extends Bundle {
   val opt   = Output(UInt(5.W))
   
   var store_data = Output(UInt(32.W)) // for Store Inst only
-  
-  val reg_w_add = Output(UInt(32.W))
 }
 
 class MEM_Reg extends Bundle {
   val addr = Output(UInt(5.W))
   val data = Output(UInt(32.W))
 }
-
-
 

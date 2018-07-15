@@ -7,6 +7,12 @@ class ID extends Module {
     val iff = Flipped(new IF_ID())  // naming conflict if use `if`
     val reg = new ID_Reg()
     val ex = new ID_EX()
+    val wrRegOp = Output(new WrRegOp())
+
+    // forwarding
+    val exWrRegOp = Input(new WrRegOp())
+    val memWrRegOp = Input(new WrRegOp())
+    val wbWrRegOp = Input(new WrRegOp())
   })
 
   val inst = RegInit(Const.NOP_INST)
@@ -26,8 +32,32 @@ class ID extends Module {
   // read registers
   io.reg.read1.addr := rs1Addr
   io.reg.read2.addr := rs2Addr
-  val rs1val = io.reg.read1.data
-  val rs2val = io.reg.read2.data
+  // don't use Reg here
+  val exWrRegOp = Wire(new WrRegOp())
+  exWrRegOp := io.exWrRegOp
+  val memWrRegOp = Wire(new WrRegOp())
+  memWrRegOp := io.memWrRegOp
+  val wbWrRegOp = Wire(new WrRegOp())
+  wbWrRegOp := io.wbWrRegOp
+  // TODO: check rdy
+  val rs1val = Mux(rs1Addr.orR,
+    Mux(exWrRegOp.addr === rs1Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs1Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs1Addr,
+          wbWrRegOp.data,
+          io.reg.read1.data))),
+    0.U)
+  val rs2val = Mux(rs2Addr.orR,
+    Mux(exWrRegOp.addr === rs2Addr,
+      exWrRegOp.data,
+      Mux(memWrRegOp.addr === rs2Addr,
+        memWrRegOp.data,
+        Mux(wbWrRegOp.addr === rs2Addr,
+          wbWrRegOp.data,
+          io.reg.read2.data))),
+    0.U)
 
   // decode control signals
   val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
@@ -47,8 +77,10 @@ class ID extends Module {
   io.ex.oprd1 := oprd1
   io.ex.oprd2 := oprd2
   io.ex.opt := decRes(DecTable.OPT)
-  io.ex.reg_w_add := Mux(decRes(DecTable.WREG).toBool, rdAddr, 0.U)
   io.ex.store_data := 0.U // TODO
 
+  io.wrRegOp.addr := Mux(decRes(DecTable.WREG).toBool, rdAddr, 0.U)
+  io.wrRegOp.data := 0.U
+  io.wrRegOp.rdy  := false.B
   // TODO: deal with bad instructions (illegal), raise exception.
 }

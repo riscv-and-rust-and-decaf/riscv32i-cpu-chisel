@@ -5,15 +5,16 @@ import Const._
 import OptCode._
 
 class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
-  poke(mem.io._EX.alu_out, 44)
   poke(mem.io._EX.opt, SUB)
-  poke(mem.io._EX.reg_w_add, 10)
+  poke(mem.io.exWrRegOp.addr, 10)
+  poke(mem.io.exWrRegOp.data, 44)
   step(1)
   expect(mem.io._Reg.addr, 10)
   expect(mem.io._Reg.data, 44)
   expect(mem.io._MMU.mode, MMU_MODE_NOP)
 
   poke(mem.io._EX.opt, SW)
+  poke(mem.io._EX.alu_out, 44)
   poke(mem.io._EX.store_data, 9901)
   step(1)
   expect(mem.io._MMU.mode, MMU_MODE_SW)
