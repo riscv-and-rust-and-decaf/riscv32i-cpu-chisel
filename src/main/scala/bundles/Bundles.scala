@@ -34,6 +34,13 @@ class _Reg extends Bundle {
   val data = Input(UInt(32.W))
 }
 
+class _CSR extends Bundle {
+  val addr = Output(UInt(12.W))
+  val wdata = Output(UInt(32.W))
+  val rdata = Input(UInt(32.W))
+  val mode = Output(UInt(2.W))
+}
+
 class ID_Reg extends Bundle {
   val read1 = new _Reg()
   val read2 = new _Reg()

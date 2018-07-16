@@ -61,13 +61,15 @@ object UType {
 
 object InstType {
   // R,I,S,B,U,J
-  val BAD = 0.U(3.W)
-  val R = 1.U(3.W)
-  val I = 2.U(3.W)
-  val S = 3.U(3.W)
-  val B = 4.U(3.W)
-  val U = 5.U(3.W)
-  val J = 6.U(3.W)
+  val BAD = 0.U(4.W)
+  val R = 1.U(4.W)
+  val I = 2.U(4.W)
+  val S = 3.U(4.W)
+  val B = 4.U(4.W)
+  val U = 5.U(4.W)
+  val J = 6.U(4.W)
+  val SYS = 7.U(4.W)
+  val FENCE = 8.U(4.W)
 }
 
 
@@ -120,7 +122,9 @@ object DecTable {
     Insts.AUIPC -> List(InstType.U, UType.AUIPC),
 
     Insts.JAL   -> List(InstType.J, OptCode.ADD),
-    Insts.JALR  -> List(InstType.I, OptCode.JALR)
+    Insts.JALR  -> List(InstType.I, OptCode.JALR),
+
+    Insts.SYS   -> List(InstType.SYS, OptCode.ADD) //Maybe ecall maybe csr
 
   )
 
@@ -176,4 +180,6 @@ object Insts { // idea from mini riscv
 //  // Jump & Link
   def JAL    = BitPat("b?????????????????????????1101111")
   def JALR   = BitPat("b?????????????????000?????1100111")
+// SYS
+  def SYS  = BitPat("b?????????????????????????1110011")
 }

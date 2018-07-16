@@ -21,6 +21,7 @@ class Core extends Module {
   val wb = Module(new WB())
   val reg = Module(new RegFile)
   val mmu = Module(new IMemMMU())
+  val csr = Module(new CSR())
 
   io.log := reg.io.log
 
@@ -33,6 +34,7 @@ class Core extends Module {
   id.io.exWrRegOp <> ex.io.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
   id.io.wbWrRegOp <> wb.io.wrRegOp
+  id.io.csr <> csr.io.id
 
   io.idex <> id.io.ex
   io.ifinst := iff.io.id.inst

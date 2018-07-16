@@ -7,6 +7,7 @@ class ID extends Module {
     val iff = Flipped(new IF_ID())  // naming conflict if use `if`
     val reg = new ID_Reg()
     val ex = new ID_EX()
+    val csr = new _CSR()
 
     val wrRegOp = Output(new WrRegOp())
 
@@ -22,6 +23,7 @@ class ID extends Module {
     val log_opt = Output(UInt(5.W))
     val log_pc = Output(UInt(5.W))
     val log_imm = Output(SInt(32.W))
+    val log_fct3 = Output(UInt(3.W))
   })
   
   val inst = RegInit(Const.NOP_INST)
@@ -50,6 +52,11 @@ class ID extends Module {
   io.ex.oprd2 := 0.U
   io.ex.opt := decRes(DecTable.OPT)
   io.ex.store_data := 0.U
+
+  io.csr.addr := 0.U
+  io.csr.wdata := 0.U
+  io.csr.mode := 0.U
+
   val w_reg_addr = Wire(UInt(5.W))
   w_reg_addr := 0.U
 
@@ -88,6 +95,7 @@ class ID extends Module {
  
   io.log_bt := 0.U
   io.log_l := false.B
+  io.log_fct3 := 0.U
   // deal with different kind inst
 
   io.log_type := it
@@ -151,6 +159,25 @@ class ID extends Module {
       io.ex.oprd2 := 4.U
       //io.ex.opt   := OptCode.ADD //not necessary
       w_reg_addr := rdAddr 
+    }
+    is(InstType.SYS) {
+      val fct3 = inst(14,12)
+
+      when(fct3.orR) {
+        io.log_fct3 :=fct3
+        
+        io.csr.addr := inst(31,20)
+        io.csr.wdata := Mux(fct3(2), inst(19,15), rs1Val)
+        io.csr.mode := fct3(1,0)
+        w_reg_addr  := rdAddr
+
+        io.ex.oprd1 := io.csr.rdata
+        io.ex.oprd2 := 0.U 
+
+      }
+      .otherwise {
+        //TODO: ECALL and EBREA 
+      }
     }
     is(InstType.BAD) {
       //TODO
