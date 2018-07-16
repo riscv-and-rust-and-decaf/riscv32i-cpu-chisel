@@ -77,16 +77,27 @@ class IDTester extends ChiselFlatSpec {
 */
 
 class IDTest(t: ID) extends PeekPokeTester(t) {
+  reset(10)
   poke(t.io.iff.inst, "b111111111110_00001_010_00010_0010011".U)
   poke(t.io.reg.read1.data,7)
   poke(t.io.reg.read2.data,8)
   step(1)
-  
-  expect(t.io.im_log, -2)
 
   expect(t.io.ex.oprd1, 7)
   expect(t.io.ex.oprd2, "h_ffff_fffe".U)
   expect(t.io.ex.opt, OptCode.SLT)
+
+  poke(t.io.iff.inst, "h_fea0_9ce3".U)
+  // 1111_1110_1010_0000_1001_1100_1110_0011
+  step(1)
+  poke(t.io.reg.read1.data, 1)
+  poke(t.io.reg.read2.data, 10)
+  expect(t.io.log_type, InstType.B)
+  expect(t.io.log_opt, BType.BNE)
+  expect(t.io.log_bt, "b0_1010".U)
+  expect(t.io.log_l, true.B)
+  expect(t.io.iff.if_branch, true.B)
+
 }
 
 class IDTester extends ChiselFlatSpec {
