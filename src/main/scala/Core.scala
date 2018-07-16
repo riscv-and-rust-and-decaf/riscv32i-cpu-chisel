@@ -5,8 +5,12 @@ import bundles._
 class Core extends Module {
   val io = IO(new Bundle {
     val idex = new ID_EX()
+    val id_branch = Output(UInt(32.W))
     val ifinst = Output(UInt(32.W))
     val ifpc = Output(UInt(32.W))
+    val idpc = Output(UInt(32.W))
+    val idimm = Output(SInt(32.W))
+
     val log = Output(Vec(32, UInt(32.W)))
   })
 
@@ -33,6 +37,9 @@ class Core extends Module {
   io.idex <> id.io.ex
   io.ifinst := iff.io.id.inst
   io.ifpc := iff.io.id.pc
+  io.id_branch := id.io.iff.branch_tar
+  io.idpc := id.io.log_pc
+  io.idimm := id.io.log_imm
 
   ex.io._MEM  <> mem.io._EX
   ex.io.wrRegOp <> mem.io.exWrRegOp
