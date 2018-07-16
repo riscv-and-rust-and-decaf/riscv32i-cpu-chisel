@@ -1,6 +1,24 @@
 #!/bin/bash
-AS=riscv32-unknown-elf-as
-OBJCOPY=riscv32-unknown-elf-objcopy
+if type riscv32-unknown-elf-as > /dev/null 2>&1
+then
+    AS=riscv32-unknown-elf-as
+elif [[ -e ../riscv32-unknown-elf-as ]]
+then
+    AS=../riscv32-unknown-elf-as
+else
+    echo "No riscv as found!"
+    exit 1
+fi
+if type riscv32-unknown-elf-objcopy > /dev/null 2>&1
+then
+    OBJCOPY=riscv32-unknown-elf-objcopy
+elif [[ -e ../riscv32-unknown-elf-objcopy ]]
+then
+    OBJCOPY=../riscv32-unknown-elf-objcopy
+else
+    echo "No riscv objcopy found!"
+    exit 1
+fi
 
 fname=$1
 if [[ ${fname: -2} != ".s" ]]
