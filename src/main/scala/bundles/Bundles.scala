@@ -53,9 +53,3 @@ class EX_MEM extends Bundle {
   
   var store_data = Output(UInt(32.W)) // for Store Inst only
 }
-
-class MEM_Reg extends Bundle {
-  val addr = Output(UInt(5.W))
-  val data = Output(UInt(32.W))
-}
-

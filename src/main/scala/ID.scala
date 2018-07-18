@@ -13,7 +13,6 @@ class ID extends Module {
     // forwarding
     val exWrRegOp = Input(new WrRegOp())
     val memWrRegOp = Input(new WrRegOp())
-    val wbWrRegOp = Input(new WrRegOp())
 
     //output log
     val log_bt = Output(UInt(5.W))
@@ -59,31 +58,24 @@ class ID extends Module {
   
   io.reg.read1.addr := rs1Addr
   io.reg.read2.addr := rs2Addr
-  
-  val exWrRegOp = Wire(new WrRegOp())
-  exWrRegOp := io.exWrRegOp
-  val memWrRegOp = Wire(new WrRegOp())
-  memWrRegOp := io.memWrRegOp
-  val wbWrRegOp = Wire(new WrRegOp())
-  wbWrRegOp := io.wbWrRegOp
+
+  val exWrRegOp = io.exWrRegOp
+  val memWrRegOp = io.memWrRegOp
+
   // TODO: check rdy
   val rs1Val = Mux(rs1Addr.orR,
     Mux(exWrRegOp.addr === rs1Addr,
       exWrRegOp.data,
       Mux(memWrRegOp.addr === rs1Addr,
         memWrRegOp.data,
-        Mux(wbWrRegOp.addr === rs1Addr,
-          wbWrRegOp.data,
-          io.reg.read1.data))),
+        io.reg.read1.data)),
     0.U)
   val rs2Val = Mux(rs2Addr.orR,
     Mux(exWrRegOp.addr === rs2Addr,
       exWrRegOp.data,
       Mux(memWrRegOp.addr === rs2Addr,
         memWrRegOp.data,
-        Mux(wbWrRegOp.addr === rs2Addr,
-          wbWrRegOp.data,
-          io.reg.read2.data))),
+        io.reg.read2.data)),
     0.U)
  
   io.log_bt := 0.U

@@ -4,7 +4,7 @@ import bundles._
 class RegFile extends Module {
   val io = IO(new Bundle {
     val _ID  = Flipped(new ID_Reg())
-    val _MEM = Flipped(new MEM_Reg())
+    val _MEM = Input(new WrRegOp())
 
     // fxxk the chisel people, can't they add a tester
     //  that is able to peek internal signals? crap!

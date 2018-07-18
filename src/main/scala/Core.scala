@@ -18,7 +18,6 @@ class Core extends Module {
   val id  = Module(new ID())
   val ex  = Module(new EX())
   val mem = Module(new MEM())
-  val wb = Module(new WB())
   val reg = Module(new RegFile)
   val mmu = Module(new IMemMMU())
 
@@ -31,8 +30,7 @@ class Core extends Module {
   id.io.reg  <> reg.io._ID
   id.io.wrRegOp <> ex.io.idWrRegOp
   id.io.exWrRegOp <> ex.io.wrRegOp
-  id.io.memWrRegOp <> mem.io.wrRegOp
-  id.io.wbWrRegOp <> wb.io.wrRegOp
+  id.io.memWrRegOp <> mem.io._Reg
 
   io.idex <> id.io.ex
   io.ifinst := iff.io.id.inst
@@ -46,5 +44,4 @@ class Core extends Module {
 
   mem.io._MMU <> mmu.io._MEM
   mem.io._Reg <> reg.io._MEM
-  mem.io.wrRegOp <> wb.io.memWrRegOp
 }
