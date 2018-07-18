@@ -86,6 +86,16 @@ class NaiveInstTest(c:Core) extends PeekPokeTester(c) {
 
 }
 
+class SimpleCSRTtest(c: Core) extends PeekPokeTester(c) {
+  reset(10)
+  step(4)
+  step(11)
+  expect(c.io.log(2), 13)
+  expect(c.io.log(3), 11)
+  expect(c.io.log(4), 8)
+  expect(c.io.log(5), 10)
+}
+
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core module fwno" should "pass test" in {
@@ -106,5 +116,12 @@ class CoreTester extends ChiselFlatSpec {
       c => new NaiveInstTest(c)
     } should be (true)
   }
+  "Core simple csr test" should "pass test" in {
+    SrcBinReader.fname = "test_asm/test_csr.bin"
+    iotesters.Driver.execute(args, () => new Core()) {
+      c => new SimpleCSRTtest(c)
+    } should be (true)
+  }
+
 }
 
