@@ -5,37 +5,37 @@ import OptCode._
 
 class EX extends Module {
   val io = IO(new Bundle {
-    val _ID  = Flipped(new ID_EX())
-    val _MEM = new EX_MEM()
+    val _ID       = Flipped(new ID_EX())
+    val _MEM      = new EX_MEM()
     val idWrRegOp = Input(new WrRegOp())
-    val wrRegOp = Output(new WrRegOp())
+    val wrRegOp   = Output(new WrRegOp())
   })
 
-  val a = RegInit(0.U(32.W))
-  a := io._ID.oprd1
-  val b = RegInit(0.U(32.W))
-  b := io._ID.oprd2
-  val low5 = Wire(UInt(5.W))
-  low5 := b(4, 0)
-  
+  val a   = RegInit(0.U(32.W))
+  val b   = RegInit(0.U(32.W))
   val opt = RegInit(OptCode.ADD)
+
+  a := io._ID.oprd1
+  b := io._ID.oprd2
   opt := io._ID.opt
+
+  val low5 = b(4, 0)
 
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
   val aluRes = MuxLookup(opt,
-    (a + b),
+    a + b,
     Seq(
-      ADD  -> (a + b),
-      SUB  -> (a - b),
-      SLT ->  Mux(a.asSInt < b.asSInt, 1.U, 0.U),
+      ADD -> (a + b),
+      SUB -> (a - b),
+      SLT -> Mux(a.asSInt < b.asSInt, 1.U, 0.U),
       SLTU -> Mux(a < b, 1.U, 0.U),
-      XOR  -> (a ^ b),
-      OR   -> (a | b),
-      AND  -> (a & b),
-      SLL  -> (a << low5),
-      SRL  -> (a >> low5),
-      SRA  -> (a.asSInt >> low5).asUInt
-/*
+      XOR -> (a ^ b),
+      OR -> (a | b),
+      AND -> (a & b),
+      SLL -> (a << low5),
+      SRL -> (a >> low5),
+      SRA -> (a.asSInt >> low5).asUInt
+      /*
       LW   -> (a + b),
       LB   -> (a + b),
       LH   -> (a + b),
@@ -43,7 +43,8 @@ class EX extends Module {
       LHU  -> (a + b),
 
       SB   -> ()
-*/ //not necessary, all rest (a+b)
+      */
+      //not necessary, all rest (a+b)
     )
   )
   io._MEM.alu_out := aluRes
@@ -52,12 +53,9 @@ class EX extends Module {
   wregAddr := io.idWrRegOp.addr
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.data := aluRes
-  io.wrRegOp.rdy  := Mux(
-    (opt & OptCode.LW) === OptCode.LW,
-    false.B,
-    true.B)
+  io.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
 
-  io._MEM.opt       := opt
+  io._MEM.opt := opt
   val store_data = RegInit(0.U(32.W))
   store_data := io._ID.store_data
   io._MEM.store_data := store_data
