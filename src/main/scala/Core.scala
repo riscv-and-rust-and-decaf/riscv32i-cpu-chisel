@@ -1,19 +1,19 @@
 import chisel3._
 import bundles._
 
+class CoreState extends Bundle {
+  val idex      = new ID_EX()
+  val id_branch = Output(UInt(32.W))
+  val ifinst    = Output(UInt(32.W))
+  val ifpc      = Output(UInt(32.W))
+  val reg       = Output(Vec(32, UInt(32.W)))
+  val id        = new IDState
+}
 
 class Core extends Module {
   val io = IO(new Bundle {
     val ram = new RAMOp()
-
-    // debug things below
-    val idex = new ID_EX()
-    val id_branch = Output(UInt(32.W))
-    val ifinst = Output(UInt(32.W))
-    val ifpc = Output(UInt(32.W))
-    val idpc = Output(UInt(32.W))
-    val idimm = Output(SInt(32.W))
-    val log = Output(Vec(32, UInt(32.W)))
+    val debug = new CoreState
   })
 
   val iff = Module(new IF())
@@ -43,11 +43,11 @@ class Core extends Module {
   printf("[Core] ram: addr=%x, wdata=%x, rdata=%x, mode=%d\n", io.ram.addr, io.ram.wdata, io.ram.rdata, io.ram.mode)
 
   // all the fxxking debug things... fxxk chisel
-  io.log       <> reg.io.log
-  io.ifinst    <> iff.io.id.inst
-  io.ifpc      <> iff.io.id.pc
-  io.id_branch <> id.io.iff.branch_tar
-  io.idpc      <> id.io.log_pc
-  io.idimm     <> id.io.log_imm
-  io.idex      <> id.io.ex
+  val d = io.debug
+  d.reg       <> reg.io.log
+  d.ifinst    <> iff.io.id.inst
+  d.ifpc      <> iff.io.id.pc
+  d.id_branch <> id.io.iff.branch_tar
+  d.idex      <> id.io.ex
+  d.id        <> id.d
 }

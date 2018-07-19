@@ -21,10 +21,10 @@ class IDTest(t: ID) extends PeekPokeTester(t) {
   poke(t.io.reg.read1.data, 1)
   poke(t.io.reg.read2.data, 10)
   step(1)
-  expect(t.io.log_type, InstType.B)
-  expect(t.io.log_opt, BType.BNE)
-  expect(t.io.log_bt, "b0_1010".U)
-  expect(t.io.log_l, true.B)
+  expect(t.d.type_, InstType.B)
+  expect(t.d.opt, BType.BNE)
+  expect(t.d.bt, "b0_1010".U)
+  expect(t.d.l, true.B)
   expect(t.io.iff.if_branch, true.B)
 
 }

@@ -5,142 +5,131 @@ import bundles._
 class CoreTestModule extends Module {
   val io = IO(new Bundle {
     // debug things below
-    val idex = new ID_EX()
-    val id_branch = Output(UInt(32.W))
-    val ifinst = Output(UInt(32.W))
-    val ifpc = Output(UInt(32.W))
-    val idpc = Output(UInt(32.W))
-    val idimm = Output(SInt(32.W))
-    val log = Output(Vec(32, UInt(32.W)))
+    val debug = new CoreState()
   })
+  val d = io.debug
 
   val core = Module(new Core())
   val ram = Module(new SimRAM())
 
   core.io.ram <> ram.io.core
-  io.idex <> core.io.idex
-  io.id_branch <> core.io.id_branch
-  io.ifinst <> core.io.ifinst
-  io.ifpc <> core.io.ifpc
-  io.idpc <> core.io.idpc
-  io.idimm <> core.io.idimm
-  io.log <> core.io.log
+  d           <> core.d
 }
 
 class CoreTestWithoutFw(c: CoreTestModule) extends PeekPokeTester(c) {
   reset(10)
 
   step(5)
-  expect(c.io.log(1), 20)
+  expect(c.d.reg(1), 20)
 
   step(5)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
 
   step(5)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
 
   step(5)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
 
   step(5)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
-  expect(c.io.log(5), "h_ffff_fff5".U)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
+  expect(c.d.reg(5), "h_ffff_fff5".U)
 
   step(5)
-  expect(c.io.log(1), "h_ffff_fff5".U)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
-  expect(c.io.log(5), "h_ffff_fff5".U)
+  expect(c.d.reg(1), "h_ffff_fff5".U)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
+  expect(c.d.reg(5), "h_ffff_fff5".U)
 }
 
 
 class CoreTestWithFw(c: CoreTestModule) extends PeekPokeTester(c) {
   reset(10)
   step(4) // pipeline entry
-  expect(c.io.log(1), 20)
+  expect(c.d.reg(1), 20)
   step(1)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
   step(1)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
   step(1)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
   step(1)
-  expect(c.io.log(1), 20)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
-  expect(c.io.log(5), "h_ffff_fff5".U)
+  expect(c.d.reg(1), 20)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
+  expect(c.d.reg(5), "h_ffff_fff5".U)
   step(1)
-  expect(c.io.log(1), "h_ffff_fff5".U)
-  expect(c.io.log(2), 30)
-  expect(c.io.log(3), 10)
-  expect(c.io.log(4), "h_ffff_ffff".U)
-  expect(c.io.log(5), "h_ffff_fff5".U)
+  expect(c.d.reg(1), "h_ffff_fff5".U)
+  expect(c.d.reg(2), 30)
+  expect(c.d.reg(3), 10)
+  expect(c.d.reg(4), "h_ffff_ffff".U)
+  expect(c.d.reg(5), "h_ffff_fff5".U)
 }
 
 class NaiveInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
   reset(10)
   step(4)
-  expect(c.io.ifpc, 16)
-  expect(c.io.log(10), 10)
+  expect(c.d.ifpc, 16)
+  expect(c.d.reg(10), 10)
   step(1)
-  expect(c.io.ifpc, 20)
-  expect(c.io.ifinst, "h_fea09ce3".U)
+  expect(c.d.ifpc, 20)
+  expect(c.d.ifinst, "h_fea09ce3".U)
   step(1)
-  expect(c.io.idpc, 20)
-  expect(c.io.idimm, -8)
-  expect(c.io.id_branch, 12)
+  expect(c.d.id.pc, 20)
+  expect(c.d.id.imm, -8)
+  expect(c.d.id_branch, 12)
   step(45)
-  expect(c.io.log(7), 55)
+  expect(c.d.reg(7), 55)
   step(1000)
-  expect(c.io.log(4), 1000)
-  expect(c.io.log(5), 1597)
-  expect(c.io.log(6), 987)
-  expect(c.io.log(7), 1597)
-  expect(c.io.log(1), 597)
+  expect(c.d.reg(4), 1000)
+  expect(c.d.reg(5), 1597)
+  expect(c.d.reg(6), 987)
+  expect(c.d.reg(7), 1597)
+  expect(c.d.reg(1), 597)
 }
 
 class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
   reset(10)
   step(4)
-  expect(c.io.ifpc, 16)
-  expect(c.io.log(1), "h_87654000".U)
+  expect(c.d.ifpc, 16)
+  expect(c.d.reg(1), "h_87654000".U)
   step(1)
-  expect(c.io.ifpc, 20)
-  expect(c.io.log(1), "h_87654000".U)
-  expect(c.io.log(2), "h_1".U)
+  expect(c.d.ifpc, 20)
+  expect(c.d.reg(1), "h_87654000".U)
+  expect(c.d.reg(2), "h_1".U)
   step(1)
-  expect(c.io.ifpc, 24) // now the fourth inst (store) is in MEM
-  expect(c.io.log(1), "h_87654321".U)
-  expect(c.io.log(2), "h_1".U)
+  expect(c.d.ifpc, 24) // now the fourth inst (store) is in MEM
+  expect(c.d.reg(1), "h_87654321".U)
+  expect(c.d.reg(2), "h_1".U)
   step(1)
-  expect(c.io.ifpc, 24) // not advancing because of the store inst
-  expect(c.io.log(1), "h_87654321".U)
-  expect(c.io.log(2), "h_1".U)
+  expect(c.d.ifpc, 24) // not advancing because of the store inst
+  expect(c.d.reg(1), "h_87654321".U)
+  expect(c.d.reg(2), "h_1".U)
   step(1)
-  expect(c.io.ifpc, 24) // not advancing because of the load inst
-  expect(c.io.log(1), "h_87654321".U)
-  expect(c.io.log(2), "h_87654321".U)
+  expect(c.d.ifpc, 24) // not advancing because of the load inst
+  expect(c.d.reg(1), "h_87654321".U)
+  expect(c.d.reg(2), "h_87654321".U)
 //  step(1)
-//  expect(c.io.ifpc, 28) // now advancing
-//  expect(c.io.log(1), "h_87654321".U)
-//  expect(c.io.log(2), "h_87654543".U)
+//  expect(c.d.ifpc, 28) // now advancing
+//  expect(c.d.log(1), "h_87654321".U)
+//  expect(c.d.log(2), "h_87654543".U)
 }
 
 

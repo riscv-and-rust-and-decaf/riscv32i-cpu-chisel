@@ -2,6 +2,15 @@ import chisel3._
 import bundles._
 import chisel3.util._
 
+class IDState extends Bundle {
+  val bt = Output(UInt(5.W))
+  val l = Output(Bool())
+  val type_ = Output(UInt(3.W))
+  val opt = Output(UInt(5.W))
+  val pc = Output(UInt(5.W))
+  val imm = Output(SInt(32.W))
+}
+
 class ID extends Module {
   val io = IO(new Bundle {
     val iff = Flipped(new IF_ID())  // naming conflict if use `if`
@@ -15,13 +24,10 @@ class ID extends Module {
     val memWrRegOp = Flipped(new WrRegOp)
 
     //output log
-    val log_bt = Output(UInt(5.W))
-    val log_l = Output(Bool())
-    val log_type = Output(UInt(3.W))
-    val log_opt = Output(UInt(5.W))
-    val log_pc = Output(UInt(5.W))
-    val log_imm = Output(SInt(32.W))
+    val debug = new IDState
   })
+  val d = io.debug
+
   io.ex.oprd1 := 0.U
   io.ex.oprd2 := 0.U
 
@@ -30,7 +36,7 @@ class ID extends Module {
   val pc = RegInit(0.U(32.W))
   pc := io.iff.pc
 
-  io.log_pc := pc
+  d.pc := pc
 
   val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
   val it = decRes(DecTable.TYPE)
@@ -41,7 +47,7 @@ class ID extends Module {
 
   val imm = Wire(SInt(32.W))
 
-  io.log_imm := imm
+  d.imm := imm
 
   //Null Init
   io.iff.if_branch  := false.B
@@ -80,12 +86,12 @@ class ID extends Module {
         io.reg.read2.data)),
     0.U)
 
-  io.log_bt := 0.U
-  io.log_l := false.B
+  d.bt := 0.U
+  d.l := false.B
   // deal with different kind inst
 
-  io.log_type := it
-  io.log_opt := decRes(DecTable.OPT)
+  d.type_ := it
+  d.opt := decRes(DecTable.OPT)
 
   switch(it) {
     is(InstType.R) {
@@ -125,8 +131,8 @@ class ID extends Module {
 
       io.ex.opt := OptCode.ADD
 
-      io.log_bt := bt
-      io.log_l := l
+      d.bt := bt
+      d.l := l
     }
     is(InstType.U) {
       imm := (inst & "h_fffff000".U).asSInt
