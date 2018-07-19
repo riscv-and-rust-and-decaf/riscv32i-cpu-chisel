@@ -1,7 +1,29 @@
-package bundles
+package core_
 
 import chisel3._
-import chisel3.util._
+
+/*
+  Interface from Core.MMU to IOManager
+
+  # Conflict
+  If both read & write for the same address occurs at the same cycle, write first.
+
+  # Address Map
+  Compatible with QEMU virt board device tree:
+  https://www.sifive.com/blog/2017/12/20/risc-v-qemu-part-1-privileged-isa-hifive1-virtio/
+
+  * [0x10000000, 0x10000008) 8B : UART
+  * [0x10001000, 0x10002000) 1K : CGA  (Not std. Compatible with x86 CGA at 0xB8000.)
+  * [0x80000000, 0x80400000) 4M : RAM1
+  * [0x80400000, 0x80800000) 4M : RAM2
+  * [0x80800000, 0x81000000) 8M : Flash
+
+ */
+class Core_IO extends Bundle {
+  val if_ = new RAMOp()
+  val mem = new RAMOp()
+//  val mmu = new RAMOp()
+}
 
 // repesents an operation of "writing registers", when data might not be ready
 class WrRegOp extends Bundle {
@@ -17,6 +39,7 @@ class RAMOp extends Bundle {
   val wdata = Output(UInt(32.W))
 
   val rdata = Input(UInt(32.W))
+  val ok    = Input(Bool())
 }
 
 // represents an operation of "reading registers"

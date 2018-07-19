@@ -1,5 +1,6 @@
+package core_
+
 import chisel3._
-import bundles._
 
 class CoreState extends Bundle {
   val idex      = new ID_EX()
@@ -12,7 +13,7 @@ class CoreState extends Bundle {
 
 class Core extends Module {
   val io = IO(new Bundle {
-    val ram = new RAMOp()
+    val dev = new Core_IO()
     val debug = new CoreState
   })
 
@@ -25,7 +26,6 @@ class Core extends Module {
 
   iff.io.ram   <> mmu.io.iff
   iff.io.id    <> id.io.iff
-  iff.io.stall <> mmu.io.ifStall
 
   id.io.ex         <> ex.io.id
   id.io.reg        <> reg.io.id
@@ -39,8 +39,8 @@ class Core extends Module {
   mem.io.mmu     <> mmu.io.mem
   mem.io.wrRegOp <> reg.io.mem
 
-  mmu.io.ram <> io.ram
-  printf("[Core] ram: addr=%x, wdata=%x, rdata=%x, mode=%d\n", io.ram.addr, io.ram.wdata, io.ram.rdata, io.ram.mode)
+  mmu.io.dev <> io.dev
+  printf(p"[Core] IO = ${io.dev}\n")
 
   // all the fxxking debug things... fxxk chisel
   val d = io.debug

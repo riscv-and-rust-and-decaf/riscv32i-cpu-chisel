@@ -1,5 +1,6 @@
+package core_
+
 import chisel3._
-import bundles._
 
 class RegFile extends Module {
   val io = IO(new Bundle {

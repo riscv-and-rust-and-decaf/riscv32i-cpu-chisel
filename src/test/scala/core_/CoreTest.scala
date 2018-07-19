@@ -1,6 +1,8 @@
+package core_
+
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
-import bundles._
+import chisel3.iotesters._
+import devices.{IOManager, MockRam, SrcBinReader}
 
 class CoreTestModule extends Module {
   val io = IO(new Bundle {
@@ -10,10 +12,12 @@ class CoreTestModule extends Module {
   val d = io.debug
 
   val core = Module(new Core())
-  val ram = Module(new SimRAM())
+  val ioCtrl = Module(new IOManager())
+  val ram = Module(new MockRam(SrcBinReader.read_insts()))
 
-  core.io.ram <> ram.io.core
-  d           <> core.d
+  core.io.dev   <> ioCtrl.io.core
+  ioCtrl.io.ram <> ram.io
+  d             <> core.d
 }
 
 class CoreTestWithoutFw(c: CoreTestModule) extends PeekPokeTester(c) {
@@ -135,24 +139,24 @@ class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
 
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
-//  "Core module fwno" should "pass test" in {
-//    SrcBinReader.fname = "test_asm/test2.bin"
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new CoreTestWithoutFw(c)
-//    } should be (true)
-//  }
-//  "Core module fwyes" should "pass test" in {
-//    SrcBinReader.fname = "test_asm/test3.bin"
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new CoreTestWithFw(c)
-//    } should be (true)
-//  }
-//  "Core test 1+2+..10" should "eq to 55" in {
-//    SrcBinReader.fname = "test_asm/test4.bin"
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new NaiveInstTest(c)
-//    } should be (true)
-//  }
+  "Core module fwno" should "pass test" in {
+    SrcBinReader.fname = "test_asm/test2.bin"
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new CoreTestWithoutFw(c)
+    } should be (true)
+  }
+  "Core module fwyes" should "pass test" in {
+    SrcBinReader.fname = "test_asm/test3.bin"
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new CoreTestWithFw(c)
+    } should be (true)
+  }
+  "Core test 1+2+..10" should "eq to 55" in {
+    SrcBinReader.fname = "test_asm/test4.bin"
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new NaiveInstTest(c)
+    } should be (true)
+  }
   "Core test simple load/store" should "pass test" in {
     SrcBinReader.fname = "test_asm/test5.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {

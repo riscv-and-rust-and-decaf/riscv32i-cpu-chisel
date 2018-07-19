@@ -1,17 +1,19 @@
+package core_
+
 import chisel3._
-import bundles._
 
 
 class IF extends Module {
   val io = IO(new Bundle {
     val ram = new RAMOp()
-    val stall = Input(Bool())
     val id = new IF_ID()
   })
 
+  val stall = !io.ram.ok
+
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
-  val npc = Mux(io.stall,
+  val npc = Mux(stall,
     pc,
     Mux(io.id.if_branch,
       io.id.branch_tar,
@@ -25,7 +27,7 @@ class IF extends Module {
 
   // feed to ID
   io.id.pc   := pc
-  io.id.inst := Mux(io.stall, Const.NOP_INST, io.ram.rdata)
+  io.id.inst := Mux(stall, Const.NOP_INST, io.ram.rdata)
 
   printf("[IF] pc=%d, inst=%x\n", io.id.pc, io.id.inst)
 }

@@ -1,3 +1,5 @@
+package core_
+
 import chisel3._
 import chisel3.util._
 
@@ -10,13 +12,16 @@ object Const {
 object RAMMode {
   val NOP = "b0000".U
   val LW  = "b0001".U
-  val SW  = "b0010".U
-  val LB  = "b0011".U
-  val LBU = "b0100".U
-  val SB  = "b0101".U
-  val LH  = "b0110".U
-  val LHU = "b0111".U
-  val SH  = "b1000".U
+  val LH  = "b0010".U
+  val LHU = "b0011".U
+  val LB  = "b0100".U
+  val LBU = "b0101".U
+  val SW  = "b1001".U
+  val SH  = "b1010".U
+  val SB  = "b1100".U
+
+  def isRead(x: UInt): Bool = !x(3) && x.orR
+  def isWrite(x: UInt): Bool = x(3)
 }
 
 object OptCode {

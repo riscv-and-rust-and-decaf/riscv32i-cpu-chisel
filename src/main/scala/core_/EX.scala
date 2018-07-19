@@ -1,6 +1,7 @@
+package core_
+
 import chisel3._
 import chisel3.util._
-import bundles._
 import OptCode._
 
 class EX extends Module {
