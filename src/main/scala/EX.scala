@@ -15,27 +15,26 @@ class EX extends Module {
   a := io.id.oprd1
   val b = RegInit(0.U(32.W))
   b := io.id.oprd2
-  val low5 = Wire(UInt(5.W))
-  low5 := b(4, 0)
-  
   val opt = RegInit(OptCode.ADD)
   opt := io.id.opt
 
+  val low5 = b(4, 0)
+
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
   val aluRes = MuxLookup(opt,
-    (a + b),
+    a + b,
     Seq(
-      ADD  -> (a + b),
-      SUB  -> (a - b),
-      SLT ->  Mux(a.asSInt < b.asSInt, 1.U, 0.U),
+      ADD -> (a + b),
+      SUB -> (a - b),
+      SLT -> Mux(a.asSInt < b.asSInt, 1.U, 0.U),
       SLTU -> Mux(a < b, 1.U, 0.U),
-      XOR  -> (a ^ b),
-      OR   -> (a | b),
-      AND  -> (a & b),
-      SLL  -> (a << low5),
-      SRL  -> (a >> low5),
-      SRA  -> (a.asSInt >> low5).asUInt
-/*
+      XOR -> (a ^ b),
+      OR -> (a | b),
+      AND -> (a & b),
+      SLL -> (a << low5),
+      SRL -> (a >> low5),
+      SRA -> (a.asSInt >> low5).asUInt
+      /*
       LW   -> (a + b),
       LB   -> (a + b),
       LH   -> (a + b),
@@ -43,7 +42,8 @@ class EX extends Module {
       LHU  -> (a + b),
 
       SB   -> ()
-*/ //not necessary, all rest (a+b)
+      */
+      //not necessary, all rest (a+b)
     )
   )
   io.mem.alu_out := aluRes
@@ -52,10 +52,7 @@ class EX extends Module {
   wregAddr := io.idWrRegOp.addr
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.data := aluRes
-  io.wrRegOp.rdy  := Mux(
-    (opt & OptCode.LW) === OptCode.LW,
-    false.B,
-    true.B)
+  io.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
 
   io.mem.opt       := opt
   val store_data = RegInit(0.U(32.W))
