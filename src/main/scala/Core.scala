@@ -40,6 +40,7 @@ class Core extends Module {
   mem.io.wrRegOp <> reg.io.mem
 
   mmu.io.ram <> io.ram
+  printf("[Core] ram: addr=%x, wdata=%x, rdata=%x, mode=%d\n", io.ram.addr, io.ram.wdata, io.ram.rdata, io.ram.mode)
 
   // all the fxxking debug things... fxxk chisel
   io.log       <> reg.io.log

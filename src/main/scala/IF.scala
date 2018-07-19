@@ -11,17 +11,21 @@ class IF extends Module {
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
-  val npc = pc + 4.U
-  pc := Mux(io.id.if_branch, io.id.branch_tar, npc) 
+  val npc = Mux(io.stall,
+    pc,
+    Mux(io.id.if_branch,
+      io.id.branch_tar,
+      pc + 4.U))
+  pc := npc
 
   // instruction fetch
-  io.ram.addr  := pc; // while feeding current instruction to ID
-                      // continue to fetch **NEXT** instruction
+  io.ram.addr  := pc; // fetch current instruction
   io.ram.mode  := RAMMode.LW
   io.ram.wdata := 0.U
 
   // feed to ID
   io.id.pc   := pc
-  io.id.inst := io.ram.rdata 
+  io.id.inst := Mux(io.stall, Const.NOP_INST, io.ram.rdata)
 
+  printf("[IF] pc=%d, inst=%x\n", io.id.pc, io.id.inst)
 }
