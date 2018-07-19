@@ -17,7 +17,7 @@ class IF extends Module {
   // instruction fetch
   io.ram.addr  := pc; // while feeding current instruction to ID
                       // continue to fetch **NEXT** instruction
-  io.ram.mode  := Const.MMU_MODE_LW
+  io.ram.mode  := RAMMode.LW
   io.ram.wdata := 0.U
 
   // feed to ID

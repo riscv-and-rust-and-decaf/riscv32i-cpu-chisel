@@ -2,8 +2,6 @@ import chisel3._
 import chisel3.util._
 import bundles._
 
-import Const._
-
 class MEM extends Module {
   val io = IO(new Bundle {
     val ex  = Flipped(new EX_MEM()) 
@@ -31,11 +29,14 @@ class MEM extends Module {
 
   io.mmu.addr  := alu_out
   io.mmu.wdata := store_data
-  io.mmu.mode  := Mux(
-    opt(4).toBool,
-    opt(3,0),
-    0.U(4.W)
-  )
+  io.mmu.mode  := MuxLookup(opt, RAMMode.NOP, Seq(
+    OptCode.LW  -> RAMMode.LW,
+    OptCode.SW  -> RAMMode.SW,
+    OptCode.LB  -> RAMMode.LB,
+    OptCode.LBU -> RAMMode.LBU,
+    OptCode.SB  -> RAMMode.SB,
+    OptCode.LH  -> RAMMode.LH,
+    OptCode.LHU -> RAMMode.LHU))
 
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.rdy  := true.B

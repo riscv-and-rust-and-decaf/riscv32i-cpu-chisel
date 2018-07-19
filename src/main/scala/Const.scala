@@ -5,13 +5,19 @@ import chisel3.util._
 object Const {
   val PC_INIT = 0.U(32.W)
   val NOP_INST = "h_0000_0013".U(32.W)
-
-  val MMU_MODE_NOP = "b0000".U
-  val MMU_MODE_LW  = "b1000".U
-
-  val MMU_MODE_SW  = "b0100".U
 }
 
+object RAMMode {
+  val NOP = "b0000".U
+  val LW  = "b0001".U
+  val SW  = "b0010".U
+  val LB  = "b0011".U
+  val LBU = "b0100".U
+  val SB  = "b0101".U
+  val LH  = "b0110".U
+  val LHU = "b0111".U
+  val SH  = "b1000".U
+}
 
 object OptCode {
   val ADD = 0.U(5.W)

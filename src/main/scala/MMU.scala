@@ -54,9 +54,9 @@ class SimRAM extends Module {
   private val mem = VecInit(SrcBinReader.read_insts())
 
   io.core.rdata := 0.U
-  when (io.core.mode === Const.MMU_MODE_NOP) {
+  when (io.core.mode === RAMMode.NOP) {
     // nop
-  } .elsewhen (io.core.mode === Const.MMU_MODE_LW) {
+  } .elsewhen (io.core.mode === RAMMode.LW) {
     io.core.rdata := mem(io.core.addr)
   } .otherwise {
     printf("[SimRAM] bad mode %x!\n", io.core.mode)

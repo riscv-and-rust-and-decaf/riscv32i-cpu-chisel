@@ -13,7 +13,7 @@ class WrRegOp extends Bundle {
 // represents an operation of "ram access"
 class RAMOp extends Bundle {
   val addr  = Output(UInt(32.W))
-  val mode  = Output(UInt(4.W))   // Consts.scala:MMU_MODE_XX
+  val mode  = Output(UInt(4.W))   // Consts.scalaRAMMode.XX
   val wdata = Output(UInt(32.W)) 
   
   val rdata = Input(UInt(32.W))

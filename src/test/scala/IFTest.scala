@@ -24,7 +24,7 @@ class IFTestModule extends Module {
 
   mmu.io.mem.addr := 0.U
   mmu.io.mem.wdata := 0.U
-  mmu.io.mem.mode := Const.MMU_MODE_NOP;
+  mmu.io.mem.mode := RAMMode.NOP;
 }
 
 

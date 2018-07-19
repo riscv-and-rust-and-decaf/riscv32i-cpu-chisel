@@ -11,20 +11,20 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
   step(1)
   expect(mem.io.reg.addr, 10)
   expect(mem.io.reg.data, 44)
-  expect(mem.io.mmu.mode, MMU_MODE_NOP)
+  expect(mem.io.mmu.mode, RAMMode.NOP)
 
   poke(mem.io.ex.opt, SW)
   poke(mem.io.ex.alu_out, 44)
   poke(mem.io.ex.store_data, 9901)
   step(1)
-  expect(mem.io.mmu.mode, MMU_MODE_SW)
+  expect(mem.io.mmu.mode, RAMMode.SW)
   expect(mem.io.mmu.addr, 44)
   expect(mem.io.mmu.wdata, 9901)
 
   poke(mem.io.ex.opt, LW)
   poke(mem.io.mmu.rdata, 4321)
   step(1)
-  expect(mem.io.mmu.mode, MMU_MODE_LW)
+  expect(mem.io.mmu.mode, RAMMode.LW)
   expect(mem.io.reg.addr, 10)
   expect(mem.io.reg.data, 4321)
 }
