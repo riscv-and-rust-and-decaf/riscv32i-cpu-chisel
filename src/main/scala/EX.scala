@@ -7,8 +7,8 @@ class EX extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_EX())
     val mem = new EX_MEM()
-    val idWrRegOp = Input(new WrRegOp())
-    val wrRegOp = Output(new WrRegOp())
+    val idWrRegOp = Flipped(new WrRegOp)
+    val wrRegOp = new WrRegOp
   })
 
   val a = RegInit(0.U(32.W))

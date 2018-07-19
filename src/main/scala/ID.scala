@@ -8,12 +8,12 @@ class ID extends Module {
     val reg = new ID_Reg()
     val ex = new ID_EX()
 
-    val wrRegOp = Output(new WrRegOp())
+    val wrRegOp = new WrRegOp
 
     // forwarding
-    val exWrRegOp = Input(new WrRegOp())
-    val memWrRegOp = Input(new WrRegOp())
-    val wbWrRegOp = Input(new WrRegOp())
+    val exWrRegOp = Flipped(new WrRegOp)
+    val memWrRegOp = Flipped(new WrRegOp)
+    val wbWrRegOp = Flipped(new WrRegOp)
 
     //output log
     val log_bt = Output(UInt(5.W))

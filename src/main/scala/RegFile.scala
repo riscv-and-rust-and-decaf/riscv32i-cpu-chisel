@@ -4,7 +4,7 @@ import bundles._
 class RegFile extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_Reg())
-    val mem = Flipped(new MEM_Reg())
+    val mem = Flipped(new WrRegOp)
 
     // debug stuff below
     val log = Output(Vec(32, UInt(32.W)))

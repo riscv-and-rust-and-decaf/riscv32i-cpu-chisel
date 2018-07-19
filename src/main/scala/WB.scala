@@ -7,8 +7,8 @@ import Const._
 
 class WB extends Module {
   val io = IO(new Bundle {
-    val memWrRegOp = Input(new WrRegOp())
-    val wrRegOp = Output(new WrRegOp())
+    val memWrRegOp = Flipped(new WrRegOp)
+    val wrRegOp = new WrRegOp
   })
 
   val wregAddr = RegInit(0.U(32.W))

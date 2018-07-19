@@ -9,8 +9,8 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
   poke(mem.io.exWrRegOp.addr, 10)
   poke(mem.io.exWrRegOp.data, 44)
   step(1)
-  expect(mem.io.reg.addr, 10)
-  expect(mem.io.reg.data, 44)
+  expect(mem.io.wrRegOp.addr, 10)
+  expect(mem.io.wrRegOp.data, 44)
   expect(mem.io.mmu.mode, RAMMode.NOP)
 
   poke(mem.io.ex.opt, SW)
@@ -25,8 +25,8 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
   poke(mem.io.mmu.rdata, 4321)
   step(1)
   expect(mem.io.mmu.mode, RAMMode.LW)
-  expect(mem.io.reg.addr, 10)
-  expect(mem.io.reg.data, 4321)
+  expect(mem.io.wrRegOp.addr, 10)
+  expect(mem.io.wrRegOp.data, 4321)
 }
 
 class MEMTester extends ChiselFlatSpec {

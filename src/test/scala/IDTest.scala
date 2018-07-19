@@ -7,7 +7,7 @@ class IDTestModule extends Module {
   val io = IO(new Bundle {
     val iff = Flipped(new IF_ID())  // tester acts as ID
     val ex = new ID_EX()
-    val wrRegOp = Output(new WrRegOp())
+    val wrRegOp = new WrRegOp
     val regw = Flipped(new MEM_Reg())
   })
 

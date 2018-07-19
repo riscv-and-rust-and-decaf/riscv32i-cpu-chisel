@@ -39,8 +39,8 @@ class Core extends Module {
   ex.io.wrRegOp <> mem.io.exWrRegOp
 
   mem.io.mmu     <> mmu.io.mem
-  mem.io.reg     <> reg.io.mem
   mem.io.wrRegOp <> wb.io.memWrRegOp
+  mem.io.wrRegOp <> reg.io.mem
 
   mmu.io.ram <> io.ram
 

@@ -6,10 +6,9 @@ class MEM extends Module {
   val io = IO(new Bundle {
     val ex  = Flipped(new EX_MEM()) 
     val mmu = new RAMOp()
-    val reg = new MEM_Reg()
 
-    val exWrRegOp = Input(new WrRegOp())
-    val wrRegOp = Output(new WrRegOp())
+    val exWrRegOp = Flipped(new WrRegOp)
+    val wrRegOp = new WrRegOp
   })
 
   val opt = RegInit(OptCode.ADD)
@@ -41,7 +40,4 @@ class MEM extends Module {
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.rdy  := true.B
   io.wrRegOp.data := wregData
-
-  io.reg.addr := wregAddr
-  io.reg.data := wregData
 }
