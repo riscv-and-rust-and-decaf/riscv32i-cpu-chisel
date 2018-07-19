@@ -6,32 +6,32 @@ import Const._
 
 class MEM extends Module {
   val io = IO(new Bundle {
-    val _EX  = Flipped(new EX_MEM()) 
-    val _MMU = new RAMOp()
-    val _Reg = new MEM_Reg()
+    val ex  = Flipped(new EX_MEM()) 
+    val mmu = new RAMOp()
+    val reg = new MEM_Reg()
 
     val exWrRegOp = Input(new WrRegOp())
     val wrRegOp = Output(new WrRegOp())
   })
 
   val opt = RegInit(OptCode.ADD)
-  opt := io._EX.opt
+  opt := io.ex.opt
   val store_data = RegInit(0.U(32.W))
-  store_data := io._EX.store_data
+  store_data := io.ex.store_data
   val alu_out = RegInit(0.U(32.W))
-  alu_out := io._EX.alu_out
+  alu_out := io.ex.alu_out
   val wregAddr = RegInit(0.U(32.W))
   wregAddr := io.exWrRegOp.addr
   val wregData = RegInit(0.U(32.W))
   wregData := Mux(
-    (io._EX.opt & OptCode.LW) === OptCode.LW, // must use io.opt here
-    io._MMU.rdata,
+    (io.ex.opt & OptCode.LW) === OptCode.LW, // must use io.opt here
+    io.mmu.rdata,
     io.exWrRegOp.data
   )
 
-  io._MMU.addr  := alu_out
-  io._MMU.wdata := store_data
-  io._MMU.mode  := Mux(
+  io.mmu.addr  := alu_out
+  io.mmu.wdata := store_data
+  io.mmu.mode  := Mux(
     opt(4).toBool,
     opt(3,0),
     0.U(4.W)
@@ -41,6 +41,6 @@ class MEM extends Module {
   io.wrRegOp.rdy  := true.B
   io.wrRegOp.data := wregData
 
-  io._Reg.addr := wregAddr
-  io._Reg.data := wregData
+  io.reg.addr := wregAddr
+  io.reg.data := wregData
 }

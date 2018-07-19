@@ -37,7 +37,7 @@ class ID extends Module {
   val rs1Addr  = inst(19, 15)
   val rs2Addr  = inst(24, 20)
   val rdAddr   = inst(11, 7)
-  
+
   val imm = Wire(SInt(32.W))
  
   io.log_imm := imm

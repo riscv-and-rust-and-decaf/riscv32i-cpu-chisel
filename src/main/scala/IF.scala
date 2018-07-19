@@ -4,7 +4,8 @@ import bundles._
 
 class IF extends Module {
   val io = IO(new Bundle {
-    val ram = new IFRAMOp()
+    val ram = new RAMOp()
+    val stall = Input(Bool())
     val id = new IF_ID()
   })
 
@@ -12,7 +13,6 @@ class IF extends Module {
   val pc  = RegInit(Const.PC_INIT)
   val npc = pc + 4.U
   pc := Mux(io.id.if_branch, io.id.branch_tar, npc) 
-    // happens on ff
 
   // instruction fetch
   io.ram.addr  := pc; // while feeding current instruction to ID
@@ -24,5 +24,4 @@ class IF extends Module {
   io.id.pc   := pc
   io.id.inst := io.ram.rdata 
 
-  // TODO: branching
 }

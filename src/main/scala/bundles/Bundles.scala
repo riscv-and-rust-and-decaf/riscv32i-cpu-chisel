@@ -10,6 +10,21 @@ class WrRegOp extends Bundle {
   val rdy  = Bool()     // data might be ready in different stages e.g. EX and MEM
 }
 
+// represents an operation of "ram access"
+class RAMOp extends Bundle {
+  val addr  = Output(UInt(32.W))
+  val mode  = Output(UInt(4.W))   // Consts.scala:MMU_MODE_XX
+  val wdata = Output(UInt(32.W)) 
+  
+  val rdata = Input(UInt(32.W))
+}
+
+// represents an operation of "reading registers"
+class RdRegOp extends Bundle {
+  val addr = Output(UInt(5.W))
+  val data = Input(UInt(32.W))
+}
+
 class IF_ID extends Bundle {
   val pc   = Output(UInt(32.W))
   val inst = Output(UInt(32.W))
@@ -17,26 +32,9 @@ class IF_ID extends Bundle {
   val branch_tar = Input(UInt(32.W))
 }
 
-class RAMOp extends Bundle {
-  val addr  = Output(UInt(32.W))
-  val mode  = Output(UInt(4.W))
-  val wdata = Output(UInt(32.W)) 
-  
-  val rdata = Input(UInt(32.W))
-}
-
-class IFRAMOp extends RAMOp {
-  val ifstall = Input(Bool())
-}
-
-class _Reg extends Bundle {
-  val addr = Output(UInt(5.W))
-  val data = Input(UInt(32.W))
-}
-
 class ID_Reg extends Bundle {
-  val read1 = new _Reg()
-  val read2 = new _Reg()
+  val read1 = new RdRegOp()
+  val read2 = new RdRegOp()
 }
 
 class ID_EX extends Bundle {

@@ -12,8 +12,8 @@ class IDTestModule extends Module {
   })
 
   val reg = Module(new RegFile())
-  reg.io._MEM.addr := io.regw.addr
-  reg.io._MEM.data := io.regw.data
+  reg.io.mem.addr := io.regw.addr
+  reg.io.mem.data := io.regw.data
 
   val emptyWrRegOp = Wire(new WrRegOp())
   emptyWrRegOp.addr := 0.U
@@ -28,8 +28,8 @@ class IDTestModule extends Module {
   id.io.iff.inst := io.iff.inst
   io.iff.if_branch := id.io.iff.if_branch
   io.iff.branch_tar := id.io.iff.branch_tar
-  id.io.reg.read1 <> reg.io._ID.read1
-  id.io.reg.read2 <> reg.io._ID.read2
+  id.io.reg.read1 <> reg.io.id.read1
+  id.io.reg.read2 <> reg.io.id.read2
   io.ex.oprd1 := id.io.ex.oprd1
   io.ex.oprd2 := id.io.ex.oprd2
   io.ex.opt := id.io.ex.opt
