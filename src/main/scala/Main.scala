@@ -1,4 +1,3 @@
-import chisel3._
 import java.io.{File, FileWriter}
 
 object Gen {
