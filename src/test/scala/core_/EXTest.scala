@@ -25,11 +25,11 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
       val rd1 = rnd.nextInt()
       val rd2 = rnd.nextInt()
       val res = func(rd1, rd2)
-      poke(ex.io._ID.oprd1, toUInt(rd1))
-      poke(ex.io._ID.oprd2, toUInt(rd2))
-      poke(ex.io._ID.opt, op)
+      poke(ex.io.id.oprd1, toUInt(rd1))
+      poke(ex.io.id.oprd2, toUInt(rd2))
+      poke(ex.io.id.opt, op)
       step(1)
-      expect(ex.io._MEM.alu_out, toUInt(res))
+      expect(ex.io.mem.alu_out, toUInt(res))
     }
   }
 

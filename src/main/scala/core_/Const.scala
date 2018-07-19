@@ -2,20 +2,22 @@ import chisel3._
 import chisel3.util._
 
 
-// The refactor book says data classes are bad.
-// Fxxk the OO people. Softeng-dogs.
-
-
 object Const {
   val PC_INIT = 0.U(32.W)
   val NOP_INST = "h_0000_0013".U(32.W)
-
-  val MMU_MODE_NOP = "b0000".U
-  val MMU_MODE_LW  = "b1000".U
-
-  val MMU_MODE_SW  = "b0100".U
 }
 
+object RAMMode {
+  val NOP = "b0000".U
+  val LW  = "b0001".U
+  val SW  = "b0010".U
+  val LB  = "b0011".U
+  val LBU = "b0100".U
+  val SB  = "b0101".U
+  val LH  = "b0110".U
+  val LHU = "b0111".U
+  val SH  = "b1000".U
+}
 
 object OptCode {
   val ADD = 0.U(5.W)
@@ -31,13 +33,11 @@ object OptCode {
 
   val JALR = 10.U(5.W)
 
-  val LW  = 24.U(5.W) // 11000 
+  val LW  = 24.U(5.W) // 11000
   val LH  = 26.U(5.W) // 11010
   val LHU = 27.U(5.W) // 11011
   val LB  = 28.U(5.W) // 11100
   val LBU = 29.U(5.W) // 11101
-
-  val _isL = 24.U(5.W) // 11000
 
   val SW = "b10100".U // 20
   val SH = "b10101".U
@@ -51,7 +51,7 @@ object BType {
   val BLT = "b0_1000".U
   val BGE = "b0_0110".U
   val BLTU ="b0_1001".U
-  val BGEU ="b0_0111".U 
+  val BGEU ="b0_0111".U
 }
 
 object UType {
@@ -87,7 +87,7 @@ object DecTable {
     Insts.SLLI  -> List(InstType.I, OptCode.SLL),
     Insts.SRLI  -> List(InstType.I, OptCode.SRL),
     Insts.SRAI  -> List(InstType.I, OptCode.SRA),
-    
+
     Insts.ADD   -> List(InstType.R, OptCode.ADD),
     Insts.SUB   -> List(InstType.R, OptCode.SUB),
     Insts.SLL   -> List(InstType.R, OptCode.SLL),
@@ -98,13 +98,13 @@ object DecTable {
     Insts.SRA   -> List(InstType.R, OptCode.SRA),
     Insts.OR    -> List(InstType.R, OptCode.OR),
     Insts.AND   -> List(InstType.R, OptCode.AND),
-    
+
     Insts.LB    -> List(InstType.I, OptCode.LB),
     Insts.LH    -> List(InstType.I, OptCode.LH),
     Insts.LW    -> List(InstType.I, OptCode.LW),
     Insts.LBU   -> List(InstType.I, OptCode.LBU),
     Insts.LHU   -> List(InstType.I, OptCode.LHU),
-    
+
     Insts.SB    -> List(InstType.S, OptCode.SB),
     Insts.SH    -> List(InstType.S, OptCode.SH),
     Insts.SW    -> List(InstType.S, OptCode.SW),

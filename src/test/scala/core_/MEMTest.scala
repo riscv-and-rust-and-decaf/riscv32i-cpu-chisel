@@ -5,28 +5,28 @@ import Const._
 import OptCode._
 
 class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
-  poke(mem.io._EX.opt, SUB)
+  poke(mem.io.ex.opt, SUB)
   poke(mem.io.exWrRegOp.addr, 10)
   poke(mem.io.exWrRegOp.data, 44)
   step(1)
-  expect(mem.io._Reg.addr, 10)
-  expect(mem.io._Reg.data, 44)
-  expect(mem.io._MMU.mode, MMU_MODE_NOP)
+  expect(mem.io.wrRegOp.addr, 10)
+  expect(mem.io.wrRegOp.data, 44)
+  expect(mem.io.mmu.mode, RAMMode.NOP)
 
-  poke(mem.io._EX.opt, SW)
-  poke(mem.io._EX.alu_out, 44)
-  poke(mem.io._EX.store_data, 9901)
+  poke(mem.io.ex.opt, SW)
+  poke(mem.io.ex.alu_out, 44)
+  poke(mem.io.ex.store_data, 9901)
   step(1)
-  expect(mem.io._MMU.mode, MMU_MODE_SW)
-  expect(mem.io._MMU.addr, 44)
-  expect(mem.io._MMU.wdata, 9901)
+  expect(mem.io.mmu.mode, RAMMode.SW)
+  expect(mem.io.mmu.addr, 44)
+  expect(mem.io.mmu.wdata, 9901)
 
-  poke(mem.io._EX.opt, LW)
-  poke(mem.io._MMU.rdata, 4321)
+  poke(mem.io.ex.opt, LW)
+  poke(mem.io.mmu.rdata, 4321)
   step(1)
-  expect(mem.io._MMU.mode, MMU_MODE_LW)
-  expect(mem.io._Reg.addr, 10)
-  expect(mem.io._Reg.data, 4321)
+  expect(mem.io.mmu.mode, RAMMode.LW)
+  expect(mem.io.wrRegOp.addr, 10)
+  expect(mem.io.wrRegOp.data, 4321)
 }
 
 class MEMTester extends ChiselFlatSpec {

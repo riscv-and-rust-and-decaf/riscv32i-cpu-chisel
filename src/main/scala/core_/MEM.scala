@@ -2,41 +2,46 @@ import chisel3._
 import chisel3.util._
 import bundles._
 
-import Const._
-
 class MEM extends Module {
   val io = IO(new Bundle {
-    val _EX  = Flipped(new EX_MEM())
-    val _MMU = new RAMOp()
+    val ex  = Flipped(new EX_MEM()) 
+    val mmu = new RAMOp()
 
-    val exWrRegOp = Input(new WrRegOp())
-    val _Reg      = Output(new WrRegOp())
+    val exWrRegOp = Flipped(new WrRegOp)
+    val wrRegOp = new WrRegOp
   })
 
   val opt = RegInit(OptCode.ADD)
-  opt := io._EX.opt
+  opt := io.ex.opt
   val store_data = RegInit(0.U(32.W))
-  store_data := io._EX.store_data
+  store_data := io.ex.store_data
   val alu_out = RegInit(0.U(32.W))
-  alu_out := io._EX.alu_out
+  alu_out := io.ex.alu_out
   val wregAddr = RegInit(0.U(32.W))
   wregAddr := io.exWrRegOp.addr
-  val wregData = RegInit(0.U(32.W))
-  wregData := Mux(
-    (io._EX.opt & OptCode.LW) === OptCode.LW, // must use io.opt here
-    io._MMU.rdata,
-    io.exWrRegOp.data
-  )
+  val exWrRegData = RegInit(0.U(32.W))
+  exWrRegData := io.exWrRegOp.data
+  val wregData = MuxLookup(opt, exWrRegData, Seq(
+    OptCode.LW -> io.mmu.rdata,
+    OptCode.LB -> io.mmu.rdata,
+    OptCode.LBU -> io.mmu.rdata,
+    OptCode.LH -> io.mmu.rdata,
+    OptCode.LHU -> io.mmu.rdata))
+  printf("[MEM] opt=%d, rdata=%x\n", opt, io.mmu.rdata)
 
-  io._MMU.addr  := alu_out
-  io._MMU.wdata := store_data
-  io._MMU.mode  := Mux(
-    opt(4).toBool,
-    opt(3,0),
-    0.U(4.W)
-  )
+  io.mmu.addr  := alu_out
+  io.mmu.wdata := store_data
+  io.mmu.mode  := MuxLookup(opt, RAMMode.NOP, Seq(
+    OptCode.LW  -> RAMMode.LW,
+    OptCode.SW  -> RAMMode.SW,
+    OptCode.LB  -> RAMMode.LB,
+    OptCode.LBU -> RAMMode.LBU,
+    OptCode.SB  -> RAMMode.SB,
+    OptCode.LH  -> RAMMode.LH,
+    OptCode.LHU -> RAMMode.LHU))
 
-  io._Reg.addr := wregAddr
-  io._Reg.rdy  := true.B
-  io._Reg.data := wregData
+  io.wrRegOp.addr := wregAddr
+  io.wrRegOp.rdy  := true.B
+  io.wrRegOp.data := wregData
+  printf("[MEM] addr=%d, wdata=%x\n", io.wrRegOp.addr, io.wrRegOp.data)
 }

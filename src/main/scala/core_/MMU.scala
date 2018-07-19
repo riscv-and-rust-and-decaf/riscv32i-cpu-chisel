@@ -20,23 +20,58 @@ object SrcBinReader {
     for (i <- 0 until bytes.length-4 by 4) {
       val s = "h_%02x%02x_%02x%02x".format(
         bytes(i+3), bytes(i+2), bytes(i+1), bytes(i))
-      rv += s.U
+      rv += s.U(32.W)
     }
     return rv.seq.toIndexedSeq
   }
 }
 
-class IMemMMU extends Module {
+
+class MMU extends Module {
   val io = IO(new Bundle {
-    val iff = Flipped(new IFRAMOp())
-    val _MEM  = Flipped(new RAMOp())
+    val iff = Flipped(new RAMOp())
+    val mem = Flipped(new RAMOp())
+    val ifStall = Output(Bool())
+
+    val ram = new RAMOp()
   })
 
-  private val imem_dummy = VecInit(SrcBinReader.read_insts())
+  when (io.mem.mode === RAMMode.NOP) { // stall
+    printf("[MMU] ok IF\n")
+    io.ifStall   := false.B
+    io.iff.rdata := io.ram.rdata
+    io.mem.rdata := 0.U
+    io.ram.addr  := io.iff.addr(8,2)
+    io.ram.wdata := io.iff.wdata
+    io.ram.mode  := io.iff.mode
+  } .otherwise { // don't stall
+    printf("[MMU] stalling IF; mem: addr=%x, wdata=%x, mode=%x, rdata=%x\n", io.mem.addr, io.mem.wdata, io.mem.mode, io.mem.rdata)
+    io.ifStall   := true.B
+    io.iff.rdata := Const.NOP_INST
+    io.mem.rdata := io.ram.rdata
+    io.ram.addr  := io.mem.addr(8,2)
+    io.ram.wdata := io.mem.wdata
+    io.ram.mode  := io.mem.mode
+  }
+}
 
-  io.iff.ifstall := false.B
-  io.iff.rdata   := imem_dummy(io.iff.addr(7, 2))
+class SimRAM extends Module {
+  val io = IO(new Bundle {
+    val core = Flipped(new RAMOp())
+  })
 
-  // discard all data from MEM: dont have load/store instructions yet
-  io._MEM.rdata    := 0.U
+  private val mem = RegInit(VecInit(SrcBinReader.read_insts()))
+
+  io.core.rdata := 0.U
+  when (io.core.mode === RAMMode.NOP) {
+    // nop
+  } .elsewhen (io.core.mode === RAMMode.LW) {
+    printf("[SimRAM] lw:  [%x]->%x\n", io.core.addr, io.core.rdata)
+    io.core.rdata := mem(io.core.addr)
+  } .elsewhen (io.core.mode === RAMMode.SW) {
+    printf("[SimRAM] sw:  [%x]=%x\n", io.core.addr, io.core.wdata)
+    mem(io.core.addr) := io.core.wdata
+  } .otherwise {
+    printf("[SimRAM] bad mode %x!\n", io.core.mode)
+  }
 }

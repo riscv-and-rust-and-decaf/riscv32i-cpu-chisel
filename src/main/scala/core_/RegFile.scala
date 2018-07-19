@@ -3,30 +3,31 @@ import bundles._
 
 class RegFile extends Module {
   val io = IO(new Bundle {
-    val _ID  = Flipped(new ID_Reg())
-    val _MEM = Input(new WrRegOp())
+    val id  = Flipped(new ID_Reg())
+    val mem = Flipped(new WrRegOp)
 
-    // fxxk the chisel people, can't they add a tester
-    //  that is able to peek internal signals? crap!
+    // debug stuff below
     val log = Output(Vec(32, UInt(32.W)))
   })
 
   val regs = Mem(32, UInt(32.W))
-
   regs(0.U) := 0.U
 
   // reads are not clocked
-  io._ID.read1.data := regs(io._ID.read1.addr)
-  io._ID.read2.data := regs(io._ID.read2.addr)
+  val raddr1 = io.id.read1.addr
+  val raddr2 = io.id.read2.addr
+  io.id.read1.data := regs(raddr1)
+  io.id.read2.data := regs(raddr2)
 
-  val addr = Wire(UInt())
-  addr := io._MEM.addr
-  val data = Wire(UInt())
-  data := io._MEM.data
+  // write happens on ff
+  val addr = io.mem.addr
+  val data = io.mem.data
   when (addr.orR) { // write gate happens here
+    printf("[RF] [%d]=%x\n", addr, data)
     regs(addr) := data
   }
 
+  // debug stuff below
   for (i <- 0 until 32)
     io.log(i) := regs(i.U)
 }

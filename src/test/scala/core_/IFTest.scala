@@ -9,7 +9,7 @@ class IFTestModule extends Module {
   })
 
   val ifmod = Module(new IF())
-  val mmu = Module(new IMemMMU())
+  val mmu = Module(new MMU())
   val gatedIDInst = Reg(UInt(32.W))
   val gatedIDpc = Reg(UInt(32.W))
   gatedIDInst := ifmod.io.id.inst
@@ -22,9 +22,9 @@ class IFTestModule extends Module {
 
   ifmod.io.ram <> mmu.io.iff
 
-  mmu.io._MEM.addr := 0.U
-  mmu.io._MEM.wdata := 0.U
-  mmu.io._MEM.mode := Const.MMU_MODE_NOP;
+  mmu.io.mem.addr := 0.U
+  mmu.io.mem.wdata := 0.U
+  mmu.io.mem.mode := RAMMode.NOP;
 }
 
 
