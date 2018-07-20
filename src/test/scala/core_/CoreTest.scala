@@ -2,9 +2,9 @@ package core_
 
 import chisel3._
 import chisel3.iotesters._
-import devices.{IOManager, MockRam, SrcBinReader}
+import devices.{IOManager, MockRam, DataHelper}
 
-class CoreTestModule extends Module {
+class CoreTestModule(fname: String) extends Module {
   val io = IO(new Bundle {
     // debug things below
     val debug = new CoreState()
@@ -13,7 +13,7 @@ class CoreTestModule extends Module {
 
   val core = Module(new Core())
   val ioCtrl = Module(new IOManager())
-  val ram = Module(new MockRam(SrcBinReader.read_insts()))
+  val ram = Module(new MockRam(DataHelper.read_insts(fname)))
 
   core.io.dev   <> ioCtrl.io.core
   ioCtrl.io.ram <> ram.io
@@ -140,26 +140,22 @@ class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core module fwno" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test2.bin"
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test2.bin")) {
       c => new CoreTestWithoutFw(c)
     } should be (true)
   }
   "Core module fwyes" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test3.bin"
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test3.bin")) {
       c => new CoreTestWithFw(c)
     } should be (true)
   }
   "Core test 1+2+..10" should "eq to 55" in {
-    SrcBinReader.fname = "test_asm/test4.bin"
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test4.bin")) {
       c => new NaiveInstTest(c)
     } should be (true)
   }
   "Core test simple load/store" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test5.bin"
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test5.bin")) {
       c => new LoadStoreInstTest(c)
     } should be (true)
   }

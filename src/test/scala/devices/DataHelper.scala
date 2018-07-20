@@ -7,10 +7,9 @@ import core_._
 
 import scala.collection.mutable.ArrayBuffer
 
-object SrcBinReader {
-  var fname = ""
+object DataHelper {
 
-  def read_insts(): Seq[UInt] = {
+  def read_insts(fname: String): Seq[UInt] = {
     if (fname.isEmpty) {
       // this should not happen because it means
       //  either using simulational MMU in verilog generation
