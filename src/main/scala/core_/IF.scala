@@ -9,7 +9,7 @@ class IF extends Module {
     val id = new IF_ID()
   })
 
-  val stall = !io.ram.ok
+  val stall = !io.ram.ok || io.id.id_stall
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
@@ -29,5 +29,4 @@ class IF extends Module {
   io.id.pc   := pc
   io.id.inst := Mux(stall, Const.NOP_INST, io.ram.rdata)
 
-  printf("[IF] pc=%d, inst=%x\n", io.id.pc, io.id.inst)
 }

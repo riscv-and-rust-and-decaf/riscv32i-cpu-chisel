@@ -33,7 +33,16 @@ class ID extends Module {
   io.ex.oprd2 := 0.U
 
   val inst = RegInit(Const.NOP_INST)
-  inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+  // If ID is stalling, the current instruction is not executed in this cycle.
+  //    (i.e. current instruction is `flushed')
+  // Therefore, on the next cycle, ID must execute the same instruction.
+  // However when IF sees a `stall', it simply gives out a `nop'.
+  // As a result, ID should not update (receive from IF) its instruction
+  //  when stalled.
+  when (!io.iff.id_stall) {
+    inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+  }
+
   val pc = RegInit(0.U(32.W))
   pc := io.iff.pc
 
@@ -94,70 +103,83 @@ class ID extends Module {
   d.type_ := it
   d.opt := decRes(DecTable.OPT)
 
-  switch(it) {
-    is(InstType.R) {
-      io.ex.oprd1 := rs1Val
-      io.ex.oprd2 := rs2Val
-      wregAddr := rdAddr
-    }
-    is(InstType.I) {
-      imm := inst(31,20).asSInt
-      io.ex.oprd1 := rs1Val
-      io.ex.oprd2 := imm.asUInt
-      wregAddr := rdAddr
 
-      when(decRes(DecTable.OPT) === OptCode.JALR) {
-        io.iff.branch_tar := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
+  // read-after-load data hazard
+  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR)
+    ((rs1Addr === exWrRegOp.addr) || (rs2Addr === exWrRegOp.addr))
+
+  when (stall) {
+    // flush current instruction
+    wregAddr := 0.U             // don't write registers
+    io.ex.opt := OptCode.ADD    // don't write memory
+    io.iff.if_branch := false.B // don't branch
+    io.iff.id_stall := true.B   // tell IF not to advance
+  } .otherwise {
+    io.iff.id_stall := false.B
+    switch(it) {
+      is(InstType.R) {
+        io.ex.oprd1 := rs1Val
+        io.ex.oprd2 := rs2Val
+        wregAddr := rdAddr
+      }
+      is(InstType.I) {
+        imm := inst(31,20).asSInt
+        io.ex.oprd1 := rs1Val
+        io.ex.oprd2 := imm.asUInt
+        wregAddr := rdAddr
+
+        when(decRes(DecTable.OPT) === OptCode.JALR) {
+          io.iff.branch_tar := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
+          io.iff.if_branch  := true.B
+
+          io.ex.oprd1 := pc
+          io.ex.oprd2 := 4.U
+          io.ex.opt   := OptCode.ADD
+        }
+      }
+      is(InstType.S) {
+        imm := Cat(inst(31,25), inst(11,7)).asSInt
+        io.ex.oprd1 := rs1Val
+        io.ex.oprd2 := imm.asUInt
+        io.ex.store_data := rs2Val
+      }
+      is(InstType.B) {
+        imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
+        io.iff.branch_tar := pc + imm.asUInt
+        val bt = decRes(DecTable.OPT)
+        val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
+        val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
+        val e = (rs1Val === rs2Val)
+        io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
+
+        io.ex.opt := OptCode.ADD
+
+        d.bt := bt
+        d.l := l
+      }
+      is(InstType.U) {
+        imm := (inst & "h_fffff000".U).asSInt
+        io.ex.oprd1 := imm.asUInt;
+        val ut = decRes(DecTable.OPT)
+        io.ex.oprd2 := Mux(ut(0), pc, 0.U)
+        io.ex.opt   := OptCode.ADD
+        wregAddr := rdAddr
+      }
+      is(InstType.J) {
+        imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
+        io.iff.branch_tar := pc + imm.asUInt
         io.iff.if_branch  := true.B
 
         io.ex.oprd1 := pc
         io.ex.oprd2 := 4.U
-        io.ex.opt   := OptCode.ADD
+        //io.ex.opt   := OptCode.ADD //not necessary
+        wregAddr := rdAddr
+      }
+      is(InstType.BAD) {
+        //TODO
       }
     }
-    is(InstType.S) {
-      imm := Cat(inst(31,25), inst(11,7)).asSInt
-      io.ex.oprd1 := rs1Val
-      io.ex.oprd2 := imm.asUInt
-      io.ex.store_data := rs2Val
-    }
-    is(InstType.B) {
-      imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
-      io.iff.branch_tar := pc + imm.asUInt
-      val bt = decRes(DecTable.OPT)
-      val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
-      val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
-      val e = (rs1Val === rs2Val)
-      io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
-
-      io.ex.opt := OptCode.ADD
-
-      d.bt := bt
-      d.l := l
-    }
-    is(InstType.U) {
-      imm := (inst & "h_fffff000".U).asSInt
-      io.ex.oprd1 := imm.asUInt;
-      val ut = decRes(DecTable.OPT)
-      io.ex.oprd2 := Mux(ut(0), pc, 0.U)
-      io.ex.opt   := OptCode.ADD
-      wregAddr := rdAddr
-    }
-    is(InstType.J) {
-      imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
-      io.iff.branch_tar := pc + imm.asUInt
-      io.iff.if_branch  := true.B
-
-      io.ex.oprd1 := pc
-      io.ex.oprd2 := 4.U
-      //io.ex.opt   := OptCode.ADD //not necessary
-      wregAddr := rdAddr
-    }
-    is(InstType.BAD) {
-      //TODO
-    }
   }
-
 
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.data := 0.U

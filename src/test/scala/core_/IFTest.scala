@@ -33,6 +33,7 @@ class IFTest(t: IFTestModule) extends PeekPokeTester(t) {
   // sequential if
   reset(10)
   poke(t.io.id.if_branch, 0)
+  poke(t.io.id.id_stall, 0)
   expect(t.io.id.pc, 0)
   for (i <- 0 until 7) {
     step(1)

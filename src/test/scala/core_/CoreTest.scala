@@ -130,10 +130,13 @@ class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
   expect(c.d.ifpc, 24) // not advancing because of the load inst
   expect(c.d.reg(1), "h_87654321".U)
   expect(c.d.reg(2), "h_87654321".U)
-//  step(1)
-//  expect(c.d.ifpc, 28) // now advancing
-//  expect(c.d.log(1), "h_87654321".U)
-//  expect(c.d.log(2), "h_87654543".U)
+  step(1)
+  expect(c.d.ifpc, 28) // now advancing
+  expect(c.d.reg(1), "h_87654321".U)
+  expect(c.d.reg(2), "h_87654321".U)
+  step(1)
+  expect(c.d.reg(1), "h_87654321".U)
+  expect(c.d.reg(2), "h_87654543".U)
 }
 
 

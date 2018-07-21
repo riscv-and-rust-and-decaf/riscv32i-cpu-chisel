@@ -28,7 +28,6 @@ class MEM extends Module {
     OptCode.LBU -> io.mmu.rdata,
     OptCode.LH -> io.mmu.rdata,
     OptCode.LHU -> io.mmu.rdata))
-  printf("[MEM] opt=%d, rdata=%x\n", opt, io.mmu.rdata)
 
   io.mmu.addr  := alu_out
   io.mmu.wdata := store_data
@@ -44,5 +43,4 @@ class MEM extends Module {
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.rdy  := true.B
   io.wrRegOp.data := wregData
-  printf("[MEM] addr=%d, wdata=%x\n", io.wrRegOp.addr, io.wrRegOp.data)
 }

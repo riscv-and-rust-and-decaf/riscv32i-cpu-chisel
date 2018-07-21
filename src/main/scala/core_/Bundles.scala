@@ -53,6 +53,7 @@ class IF_ID extends Bundle {
   val inst = Output(UInt(32.W))
   val if_branch  = Input(Bool())
   val branch_tar = Input(UInt(32.W))
+  val id_stall = Input(Bool())
 }
 
 class ID_Reg extends Bundle {

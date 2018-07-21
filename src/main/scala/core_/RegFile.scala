@@ -24,7 +24,6 @@ class RegFile extends Module {
   val addr = io.mem.addr
   val data = io.mem.data
   when (addr.orR) { // write gate happens here
-    printf("[RF] [%d]=%x\n", addr, data)
     regs(addr) := data
   }
 
