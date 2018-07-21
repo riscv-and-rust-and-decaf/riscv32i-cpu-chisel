@@ -12,7 +12,7 @@ class IOManager extends Module {
   })
 
   when(io.core.mem.mode === RAMMode.NOP) {
-    printf("[IO] IF: ${io.core.if_}\n")
+    printf(p"[IO] IF: ${io.core.if_}\n")
     io.core.if_.ok := true.B
     io.core.if_.rdata := io.ram.rdata
     io.core.mem.ok := false.B
