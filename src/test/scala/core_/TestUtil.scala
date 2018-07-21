@@ -28,9 +28,11 @@ object TestUtil {
     tester.poke(ram_init.mode, 9) // SW
 
     for(i <- data.indices) {
-      tester.poke(ram_init.addr, i * 4)
-      tester.poke(ram_init.wdata, data(i))
-      tester.step(1)
+      if(data(i) != 0) {
+        tester.poke(ram_init.addr, i * 4)
+        tester.poke(ram_init.wdata, data(i))
+        tester.step(1)
+      }
     }
     tester.poke(ready, 1)
   }
