@@ -71,8 +71,19 @@ class ID_EX extends Bundle {
 
 class EX_MEM extends Bundle {
   val alu_out = Output(UInt(32.W))
-  val opt   = Output(UInt(5.W))
+  val opt     = Output(UInt(5.W))
 
   var store_data = Output(UInt(32.W)) // for Store Inst only
+}
+
+class ID_CSR extends Bundle {
+  val addr  = Output(UInt(12.W))
+  val rdata = Input(UInt(32.W)) 
+}
+
+class MEM_CSR extends Bundle {
+  val en    = Output(Bool())
+  val addr  = Output(UInt(12.W))
+  val newVar = Output(UInt(32.W))
 }
 
