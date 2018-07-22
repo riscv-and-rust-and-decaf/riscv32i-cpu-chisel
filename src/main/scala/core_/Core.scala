@@ -40,7 +40,7 @@ class Core extends Module {
   mem.io.wrRegOp <> reg.io.mem
 
   mmu.io.dev <> io.dev
-  printf(p"[Core] IO = ${io.dev}\n")
+
   // all the fxxking debug things... fxxk chisel
   val d = io.debug
   d.reg       <> reg.io.log

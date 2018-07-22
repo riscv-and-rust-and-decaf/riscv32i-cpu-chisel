@@ -140,6 +140,39 @@ class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
 }
 
 
+class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
+  reset(10)
+  step(3)                                      // all before l1 has entered pipeline
+  for (_ <- 0 until 0x40) {
+    step(1)
+    expect(c.d.ifpc, 0x10)                     // first instruction in l1
+    step(3)
+  }
+  expect(c.d.ifpc, 0x1c)                       // leave l1
+  step(1)
+  expect(c.d.ifpc, 0x1c)                       // ram conflict.
+  step(1)                                      // intermediate instructions entered pipeline
+  for (i <- 0 until 0x40) {
+    println("\n")
+    step(1)
+    expect(c.d.ifpc, 0x24)                 // first of l2
+    if (i > 0) {
+      expect(c.d.reg(29), "h_c0ff_ee00".U(32.W))
+    }
+    for (_ <- 0 until 4) {
+      println("\n")
+      step(1)
+    }
+    expect(c.d.reg(29), 0x0)                    // to understand, draw picture yourslef
+  }
+  step(1)
+  expect(c.d.ifpc, 0x34)
+  step(1)
+  expect(c.d.ifpc, 0x38)
+  step(1)
+  expect(c.d.ifpc, 0x34)
+}
+
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core module fwno" should "pass test" in {
@@ -164,6 +197,12 @@ class CoreTester extends ChiselFlatSpec {
     SrcBinReader.fname = "test_asm/test5.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new LoadStoreInstTest(c)
+    } should be (true)
+  }
+  "Core test 6" should "pass test" in {
+    SrcBinReader.fname = "test_asm/test6.bin"
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new CoreTest6(c)
     } should be (true)
   }
 }

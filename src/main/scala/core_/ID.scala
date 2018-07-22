@@ -105,8 +105,12 @@ class ID extends Module {
 
 
   // read-after-load data hazard
-  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR)
-    ((rs1Addr === exWrRegOp.addr) || (rs2Addr === exWrRegOp.addr))
+  // TODO: refactor
+  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (
+        ((rs1Addr === exWrRegOp.addr) && ((it === InstType.R) ||
+          (it === InstType.I) || (it === InstType.S) || (it === InstType.B)))
+     || ((rs2Addr === exWrRegOp.addr) && ((it === InstType.R) ||
+          (it === InstType.S) || (it === InstType.B))))
 
   when (stall) {
     // flush current instruction

@@ -13,10 +13,10 @@ class IF extends Module {
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
-  val npc = Mux(stall,
-    pc,
-    Mux(io.id.if_branch,
-      io.id.branch_tar,
+  val npc = Mux(io.id.if_branch,
+    io.id.branch_tar,   // branch even if IF stalls,
+    Mux(stall,
+      pc,
       pc + 4.U))
   pc := npc
 
@@ -28,5 +28,4 @@ class IF extends Module {
   // feed to ID
   io.id.pc   := pc
   io.id.inst := Mux(stall, Const.NOP_INST, io.ram.rdata)
-
 }
