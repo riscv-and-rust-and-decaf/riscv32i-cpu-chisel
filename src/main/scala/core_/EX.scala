@@ -19,7 +19,7 @@ class EX extends Module {
   val opt = RegInit(OptCode.ADD)
   opt := io.id.opt
 
-  val low5 = b(4, 0)
+  val shamt = b(4, 0)
 
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
   val aluRes = MuxLookup(opt,
@@ -32,19 +32,10 @@ class EX extends Module {
       XOR -> (a ^ b),
       OR -> (a | b),
       AND -> (a & b),
-      SLL -> (a << low5),
-      SRL -> (a >> low5),
-      SRA -> (a.asSInt >> low5).asUInt
-      /*
-      LW   -> (a + b),
-      LB   -> (a + b),
-      LH   -> (a + b),
-      LBU  -> (a + b),
-      LHU  -> (a + b),
-
-      SB   -> ()
-      */
-      //not necessary, all rest (a+b)
+      SLL -> (a << shamt),
+      SRL -> (a >> shamt),
+      SRA -> (a.asSInt >> shamt).asUInt
+      // not necessary, all rest (a+b)
     )
   )
   io.mem.alu_out := aluRes

@@ -29,9 +29,6 @@ class ID extends Module {
   })
   val d = io.debug
 
-  io.ex.oprd1 := 0.U
-  io.ex.oprd2 := 0.U
-
   val inst = RegInit(Const.NOP_INST)
   // If ID is stalling, the current instruction is not executed in this cycle.
   //    (i.e. current instruction is `flushed')
@@ -49,7 +46,7 @@ class ID extends Module {
   d.pc := pc
 
   val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
-  val it = decRes(DecTable.TYPE)
+  val instType = decRes(DecTable.TYPE)
 
   val rs1Addr  = inst(19, 15)
   val rs2Addr  = inst(24, 20)
@@ -72,45 +69,37 @@ class ID extends Module {
 
   imm := 0.S
 
-  //Get regVar and  forwarding
-
+  // read registers
   io.reg.read1.addr := rs1Addr
   io.reg.read2.addr := rs2Addr
-
   val exWrRegOp = io.exWrRegOp
   val memWrRegOp = io.memWrRegOp
-
-  // TODO: check rdy
-  val rs1Val = Mux(rs1Addr.orR,
-    Mux(exWrRegOp.addr === rs1Addr,
-      exWrRegOp.data,
-      Mux(memWrRegOp.addr === rs1Addr,
-        memWrRegOp.data,
-        io.reg.read1.data)),
-    0.U)
-  val rs2Val = Mux(rs2Addr.orR,
-    Mux(exWrRegOp.addr === rs2Addr,
-      exWrRegOp.data,
-      Mux(memWrRegOp.addr === rs2Addr,
-        memWrRegOp.data,
-        io.reg.read2.data)),
-    0.U)
+  val rs1Val = PriorityMux(Seq(
+    (!rs1Addr.orR,                0.U),                // reading x0 always gives 0
+    (rs1Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
+    (rs1Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
+    (true.B,                      io.reg.read1.data))) // from the register file
+  val rs2Val = PriorityMux(Seq(
+    (!rs2Addr.orR,                0.U),                // reading x0 always gives 0
+    (rs2Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
+    (rs2Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
+    (true.B,                      io.reg.read2.data))) // from the register file
 
   d.bt := 0.U
   d.l := false.B
   // deal with different kind inst
 
-  d.type_ := it
+  d.type_ := instType
   d.opt := decRes(DecTable.OPT)
 
-
   // read-after-load data hazard
-  // TODO: refactor
-  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (
-        ((rs1Addr === exWrRegOp.addr) && ((it === InstType.R) ||
-          (it === InstType.I) || (it === InstType.S) || (it === InstType.B)))
-     || ((rs2Addr === exWrRegOp.addr) && ((it === InstType.R) ||
-          (it === InstType.S) || (it === InstType.B))))
+  val instTypesUsingRs1 = Seq(InstType.R, InstType.I, InstType.S, InstType.B)
+  val instTypesUsingRs2 = Seq(InstType.R, InstType.S, InstType.B)
+  val rs1Hazard = (rs1Addr === exWrRegOp.addr) && 
+    instTypesUsingRs1.map(x => x === instType).reduce(_ || _)
+  val rs2Hazard = (rs2Addr === exWrRegOp.addr) && 
+    instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
+  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard)
 
   when (stall) {
     // flush current instruction
@@ -120,7 +109,7 @@ class ID extends Module {
     io.iff.id_stall := true.B   // tell IF not to advance
   } .otherwise {
     io.iff.id_stall := false.B
-    switch(it) {
+    switch(instType) {
       is(InstType.R) {
         io.ex.oprd1 := rs1Val
         io.ex.oprd2 := rs2Val

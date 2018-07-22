@@ -22,12 +22,11 @@ class MEM extends Module {
   wregAddr := io.exWrRegOp.addr
   val exWrRegData = RegInit(0.U(32.W))
   exWrRegData := io.exWrRegOp.data
-  val wregData = MuxLookup(opt, exWrRegData, Seq(
-    OptCode.LW -> io.mmu.rdata,
-    OptCode.LB -> io.mmu.rdata,
-    OptCode.LBU -> io.mmu.rdata,
-    OptCode.LH -> io.mmu.rdata,
-    OptCode.LHU -> io.mmu.rdata))
+
+  val loadInsts = Seq(OptCode.LW, OptCode.LB, OptCode.LH,
+    OptCode.LBU, OptCode.LHU)
+  val isLoad = loadInsts.map(x => x === opt).reduce(_ || _)
+  val wregData = Mux(isLoad, io.mmu.rdata, exWrRegData)
 
   io.mmu.addr  := alu_out
   io.mmu.wdata := store_data

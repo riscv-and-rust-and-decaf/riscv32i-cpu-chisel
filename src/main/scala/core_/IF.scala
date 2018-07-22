@@ -1,6 +1,7 @@
 package core_
 
 import chisel3._
+import chisel3.util._
 
 
 class IF extends Module {
@@ -13,12 +14,11 @@ class IF extends Module {
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
-  val npc = Mux(io.id.if_branch,
-    io.id.branch_tar,   // branch even if IF stalls,
-    Mux(stall,
-      pc,
-      pc + 4.U))
-  pc := npc
+  val nextPC = PriorityMux(Seq(
+    (io.id.if_branch, io.id.branch_tar),  // even if stalled, acknowledge branch
+    (stall,           pc),                // when stalled, don't advance
+    (true.B,          pc + 4.U)))
+  pc := nextPC
 
   // instruction fetch
   io.ram.addr  := pc; // fetch current instruction
