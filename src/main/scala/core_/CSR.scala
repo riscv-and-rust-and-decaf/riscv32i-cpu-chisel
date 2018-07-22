@@ -6,8 +6,8 @@ import chisel3.util._
 class CSR extends Module {
 
   val io = IO(new Bundle {
-    val id  = Flipped(new ID_CSR())
-    val mem = Flipped(new MEM_CSR())
+    val id  = Flipped(new ID_CSR)
+    val mem = Flipped(new WrCSROp)
   })
 
   object PRV {
@@ -81,20 +81,20 @@ class CSR extends Module {
     ADDR.mip -> mip
   ))
 
-  when(io.mem.en) {
+  when(io.mem.mode =/= 0.U) {
     switch(io.mem.addr) {
-      is(ADDR.mstatus) {mstatus := io.mem.newVar}
-      is(ADDR.misa) {misa := io.mem.newVar}
-      is(ADDR.medeleg) {medeleg := io.mem.newVar}
-      is(ADDR.mideleg) {mideleg := io.mem.newVar}
-      is(ADDR.mie) {mie := io.mem.newVar}
-      is(ADDR.mtvec) {mtvec := io.mem.newVar}
-      is(ADDR.mcounteren) {mcounteren := io.mem.newVar}
-      is(ADDR.mscratch) {mscratch := io.mem.newVar}
-      is(ADDR.mepc) {mepc := io.mem.newVar}
-      is(ADDR.mcause) {mcause := io.mem.newVar}
-      is(ADDR.mtval) {mtval := io.mem.newVar}
-      is(ADDR.mip) {mip := io.mem.newVar}
+      is(ADDR.mstatus) {mstatus := io.mem.newVal}
+      is(ADDR.misa) {misa := io.mem.newVal}
+      is(ADDR.medeleg) {medeleg := io.mem.newVal}
+      is(ADDR.mideleg) {mideleg := io.mem.newVal}
+      is(ADDR.mie) {mie := io.mem.newVal}
+      is(ADDR.mtvec) {mtvec := io.mem.newVal}
+      is(ADDR.mcounteren) {mcounteren := io.mem.newVal}
+      is(ADDR.mscratch) {mscratch := io.mem.newVal}
+      is(ADDR.mepc) {mepc := io.mem.newVal}
+      is(ADDR.mcause) {mcause := io.mem.newVal}
+      is(ADDR.mtval) {mtval := io.mem.newVal}
+      is(ADDR.mip) {mip := io.mem.newVal}
     }
   }
 

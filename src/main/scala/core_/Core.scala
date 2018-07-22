@@ -23,21 +23,26 @@ class Core extends Module {
   val mem = Module(new MEM())
   val reg = Module(new RegFile())
   val mmu = Module(new MMU())
+  val csr = Module(new CSR())
 
   iff.io.ram   <> mmu.io.iff
   iff.io.id    <> id.io.iff
 
   id.io.ex         <> ex.io.id
   id.io.reg        <> reg.io.id
+  id.io.csr        <> csr.io.id 
   id.io.wrRegOp    <> ex.io.idWrRegOp
   id.io.exWrRegOp  <> ex.io.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
+  id.io.wrCSROp    <> ex.io.idWrCSROp
 
   ex.io.mem     <> mem.io.ex
   ex.io.wrRegOp <> mem.io.exWrRegOp
+  ex.io.wrCSROp <> mem.io.exWrCSROp
 
   mem.io.mmu     <> mmu.io.mem
   mem.io.wrRegOp <> reg.io.mem
+  mem.io.wrCSROp <> csr.io.mem
 
   mmu.io.dev <> io.dev
 

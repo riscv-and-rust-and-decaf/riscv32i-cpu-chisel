@@ -14,18 +14,19 @@ class IDState extends Bundle {
 
 class ID extends Module {
   val io = IO(new Bundle {
-    val iff = Flipped(new IF_ID())  // naming conflict if use `if`
-    val reg = new ID_Reg()
-    val ex = new ID_EX()
-
+    val iff = Flipped(new IF_ID)  // naming conflict if use `if`
+    val reg = new ID_Reg
+    val ex = new ID_EX
     val wrRegOp = new WrRegOp
+    val wrCSROp = new WrCSROp
+    val csr = new ID_CSR
 
     // forwarding
-    val exWrRegOp = Flipped(new WrRegOp)
-    val memWrRegOp = Flipped(new WrRegOp)
+    val exWrRegOp = Flipped(new WrRegOp())
+    val memWrRegOp = Flipped(new WrRegOp())
 
     //output log
-    val debug = new IDState
+    val debug = new IDState()
   })
   val d = io.debug
 
@@ -58,20 +59,7 @@ class ID extends Module {
   val imm = Wire(SInt(32.W))
 
   d.imm := imm
-
-  //Null Init
-  io.iff.if_branch  := false.B
-  io.iff.branch_tar := 0.U
-
-  io.ex.oprd1 := 0.U
-  io.ex.oprd2 := 0.U
-  io.ex.opt := decRes(DecTable.OPT)
-  io.ex.store_data := 0.U
-  val wregAddr = Wire(UInt(5.W))
-  wregAddr := 0.U
-
-  imm := 0.S
-
+  
   //Get regVar and  forwarding
 
   io.reg.read1.addr := rs1Addr
@@ -98,6 +86,28 @@ class ID extends Module {
 
   d.bt := 0.U
   d.l := false.B
+
+  //Null Init
+  io.iff.if_branch  := false.B
+  io.iff.branch_tar := 0.U
+
+  io.ex.oprd1 := 0.U
+  io.ex.oprd2 := 0.U
+  io.ex.opt := decRes(DecTable.OPT)
+  io.ex.store_data := 0.U
+  val wregAddr = Wire(UInt(5.W))
+  wregAddr := 0.U
+
+  io.csr.addr := 0.U
+
+  io.wrCSROp.mode := 0.U
+  io.wrCSROp.addr := inst(31,20) // don't care when mode==0
+  io.wrCSROp.oldVal := io.csr.rdata
+  io.wrCSROp.rsVal := rs1Val
+  io.wrCSROp.newVal := 0.U
+
+  imm := 0.S
+
   // deal with different kind inst
 
   d.type_ := it
@@ -178,6 +188,22 @@ class ID extends Module {
         io.ex.oprd2 := 4.U
         //io.ex.opt   := OptCode.ADD //not necessary
         wregAddr := rdAddr
+      }
+      is(InstType.SYS) {
+        val fct3 = inst(14,12)
+
+        when(fct3.orR) {
+          io.csr.addr := inst(31,20)
+          io.ex.oprd1 := io.csr.rdata
+
+          io.wrCSROp.mode := fct3
+
+          wregAddr := rdAddr
+        }
+        .otherwise {
+          //TODO: ECALL / EBREAK
+        }
+
       }
       is(InstType.BAD) {
         //TODO
