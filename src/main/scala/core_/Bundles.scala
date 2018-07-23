@@ -89,9 +89,4 @@ class ID_CSR extends Bundle {
   val rdata = Input(UInt(32.W)) 
 }
 
-class MEM_CSR extends Bundle {
-  val en    = Output(Bool())
-  val addr  = Output(UInt(12.W))
-  val newVal = Output(UInt(32.W))
-}
 

@@ -103,7 +103,7 @@ class ID extends Module {
   io.wrCSROp.mode := 0.U
   io.wrCSROp.addr := inst(31,20) // don't care when mode==0
   io.wrCSROp.oldVal := io.csr.rdata
-  io.wrCSROp.rsVal := rs1Val
+  io.wrCSROp.rsVal := 0.U
   io.wrCSROp.newVal := 0.U
 
   imm := 0.S
@@ -196,7 +196,8 @@ class ID extends Module {
           io.csr.addr := inst(31,20)
           io.ex.oprd1 := io.csr.rdata
 
-          io.wrCSROp.mode := fct3
+          io.wrCSROp.mode := fct3(1,0)
+          io.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
 
           wregAddr := rdAddr
         }
