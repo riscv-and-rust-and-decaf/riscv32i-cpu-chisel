@@ -34,6 +34,8 @@ class Core extends Module {
   id.io.wrRegOp    <> ex.io.idWrRegOp
   id.io.exWrRegOp  <> ex.io.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
+  id.io.exWrCSROp  <> ex.io.wrCSROp
+  id.io.memWrCSROp <> mem.io.wrCSROp
   id.io.wrCSROp    <> ex.io.idWrCSROp
 
   ex.io.mem     <> mem.io.ex

@@ -175,7 +175,7 @@ class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
 
 class CSRInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
   reset(10)
-  step(36)
+  step(15)
   expect(c.d.reg(2), 13)
   expect(c.d.reg(3), 11)
   expect(c.d.reg(4), 8)

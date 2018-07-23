@@ -22,8 +22,11 @@ class ID extends Module {
     val csr = new ID_CSR
 
     // forwarding
-    val exWrRegOp = Flipped(new WrRegOp())
-    val memWrRegOp = Flipped(new WrRegOp())
+    val exWrRegOp = Flipped(new WrRegOp)
+    val memWrRegOp = Flipped(new WrRegOp)
+
+    val exWrCSROp = Flipped(new WrCSROp)
+    val memWrCSROp = Flipped(new WrCSROp)
 
     //output log
     val debug = new IDState()
@@ -56,6 +59,8 @@ class ID extends Module {
   val rs2Addr  = inst(24, 20)
   val rdAddr   = inst(11, 7)
 
+  val csrAddr = inst(31,20)
+
   val imm = Wire(SInt(32.W))
 
   d.imm := imm
@@ -67,6 +72,8 @@ class ID extends Module {
 
   val exWrRegOp = io.exWrRegOp
   val memWrRegOp = io.memWrRegOp
+  val exWrCSROp = io.exWrCSROp
+  val memWrCSROp = io.memWrCSROp
 
   // TODO: check rdy
   val rs1Val = Mux(rs1Addr.orR,
@@ -83,6 +90,12 @@ class ID extends Module {
         memWrRegOp.data,
         io.reg.read2.data)),
     0.U)
+  val csrVal = Mux(exWrCSROp.addr === csrAddr && exWrCSROp.mode.orR,
+    exWrCSROp.newVal,
+    Mux(memWrCSROp.addr === csrAddr && memWrCSROp.mode.orR,
+      memWrCSROp.newVal,
+    io.csr.rdata))
+  
 
   d.bt := 0.U
   d.l := false.B
@@ -101,8 +114,8 @@ class ID extends Module {
   io.csr.addr := 0.U
 
   io.wrCSROp.mode := 0.U
-  io.wrCSROp.addr := inst(31,20) // don't care when mode==0
-  io.wrCSROp.oldVal := io.csr.rdata
+  io.wrCSROp.addr := csrAddr // don't care when mode==0
+  io.wrCSROp.oldVal := csrVal
   io.wrCSROp.rsVal := 0.U
   io.wrCSROp.newVal := 0.U
 
@@ -193,8 +206,8 @@ class ID extends Module {
         val fct3 = inst(14,12)
 
         when(fct3.orR) {
-          io.csr.addr := inst(31,20)
-          io.ex.oprd1 := io.csr.rdata
+          io.csr.addr := csrAddr
+          io.ex.oprd1 := csrVal
 
           io.wrCSROp.mode := fct3(1,0)
           io.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
