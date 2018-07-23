@@ -173,6 +173,15 @@ class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
   expect(c.d.ifpc, 0x34)
 }
 
+class CSRInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
+  reset(10)
+  step(15)
+  expect(c.d.reg(2), 13)
+  expect(c.d.reg(3), 11)
+  expect(c.d.reg(4), 8)
+  expect(c.d.reg(5), 10)
+}
+
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core module fwno" should "pass test" in {
@@ -203,6 +212,15 @@ class CoreTester extends ChiselFlatSpec {
     SrcBinReader.fname = "test_asm/test6.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new CoreTest6(c)
+    } should be (true)
+  }
+}
+class CoreCSRTester extends ChiselFlatSpec {
+  val args = Array[String]()
+  "Core simple csr test" should "pass test" in {
+    SrcBinReader.fname = "test_asm/test_csr.bin"
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new CSRInstTest(c)
     } should be (true)
   }
 }

@@ -6,10 +6,12 @@ import OptCode._
 
 class EX extends Module {
   val io = IO(new Bundle {
-    val id  = Flipped(new ID_EX())
-    val mem = new EX_MEM()
+    val id  = Flipped(new ID_EX)
+    val mem = new EX_MEM
     val idWrRegOp = Flipped(new WrRegOp)
     val wrRegOp = new WrRegOp
+    val idWrCSROp = Flipped(new WrCSROp)
+    val wrCSROp = new WrCSROp
   })
 
   val a = RegInit(0.U(32.W))
@@ -50,4 +52,28 @@ class EX extends Module {
   val store_data = RegInit(0.U(32.W))
   store_data := io.id.store_data
   io.mem.store_data := store_data
+
+  val wCSRAddr  = RegInit(0.U(12.W))
+  val csrMode   = RegInit(0.U(2.W))
+  val csrOldVal = RegInit(0.U(32.W))
+  val csrRsVal  = RegInit(0.U(32.W))
+  val csrNewVal = RegInit(0.U(32.W))
+
+  wCSRAddr  := io.idWrCSROp.addr
+  csrMode   := io.idWrCSROp.mode
+  csrOldVal := io.idWrCSROp.oldVal
+  csrRsVal  := io.idWrCSROp.rsVal
+  csrNewVal := io.idWrCSROp.newVal
+  
+  io.wrCSROp.addr   := wCSRAddr
+  io.wrCSROp.oldVal := csrOldVal
+  io.wrCSROp.rsVal  := csrRsVal
+  io.wrCSROp.mode   := csrMode
+  io.wrCSROp.newVal := MuxLookup(csrMode, 0.U, Seq(
+    CSRMODE.RW -> csrRsVal,
+    CSRMODE.RS -> (csrOldVal | csrRsVal),
+    CSRMODE.RC -> (csrOldVal & ~csrRsVal)
+  ))
+
+
 }

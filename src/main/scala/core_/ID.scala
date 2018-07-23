@@ -14,18 +14,22 @@ class IDState extends Bundle {
 
 class ID extends Module {
   val io = IO(new Bundle {
-    val iff = Flipped(new IF_ID())  // naming conflict if use `if`
-    val reg = new ID_Reg()
-    val ex = new ID_EX()
-
+    val iff = Flipped(new IF_ID)  // naming conflict if use `if`
+    val reg = new ID_Reg
+    val ex = new ID_EX
     val wrRegOp = new WrRegOp
+    val wrCSROp = new WrCSROp
+    val csr = new ID_CSR
 
     // forwarding
     val exWrRegOp = Flipped(new WrRegOp)
     val memWrRegOp = Flipped(new WrRegOp)
 
+    val exWrCSROp = Flipped(new WrCSROp)
+    val memWrCSROp = Flipped(new WrCSROp)
+
     //output log
-    val debug = new IDState
+    val debug = new IDState()
   })
   val d = io.debug
 
@@ -52,9 +56,41 @@ class ID extends Module {
   val rs2Addr  = inst(24, 20)
   val rdAddr   = inst(11, 7)
 
+  val csrAddr = inst(31,20)
+
   val imm = Wire(SInt(32.W))
 
   d.imm := imm
+  
+  //Get regVar and  forwarding
+
+  io.reg.read1.addr := rs1Addr
+  io.reg.read2.addr := rs2Addr
+
+  val exWrRegOp = io.exWrRegOp
+  val memWrRegOp = io.memWrRegOp
+  
+  val exWrCSROp = io.exWrCSROp
+  val memWrCSROp = io.memWrCSROp
+  
+  val rs1Val = PriorityMux(Seq(
+    (!rs1Addr.orR,                0.U),                // reading x0 always gives 0
+    (rs1Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
+    (rs1Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
+    (true.B,                      io.reg.read1.data))) // from the register file
+  val rs2Val = PriorityMux(Seq(
+    (!rs2Addr.orR,                0.U),                // reading x0 always gives 0
+    (rs2Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
+    (rs2Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
+    (true.B,                      io.reg.read2.data))) // from the register file
+
+  val csrVal = PriorityMux(Seq(
+    (exWrCSROp.addr === csrAddr && exWrCSROp.mode.orR,   exWrCSROp.newVal),
+    (memWrCSROp.addr === csrAddr && memWrCSROp.mode.orR, memWrCSROp.newVal),
+    (true.B ,                                            io.csr.rdata)))
+
+  d.bt := 0.U
+  d.l := false.B
 
   //Null Init
   io.iff.if_branch  := false.B
@@ -67,26 +103,16 @@ class ID extends Module {
   val wregAddr = Wire(UInt(5.W))
   wregAddr := 0.U
 
+  io.csr.addr := 0.U
+
+  io.wrCSROp.mode := 0.U
+  io.wrCSROp.addr := csrAddr // don't care when mode==0
+  io.wrCSROp.oldVal := csrVal
+  io.wrCSROp.rsVal := 0.U
+  io.wrCSROp.newVal := 0.U
+
   imm := 0.S
 
-  // read registers
-  io.reg.read1.addr := rs1Addr
-  io.reg.read2.addr := rs2Addr
-  val exWrRegOp = io.exWrRegOp
-  val memWrRegOp = io.memWrRegOp
-  val rs1Val = PriorityMux(Seq(
-    (!rs1Addr.orR,                0.U),                // reading x0 always gives 0
-    (rs1Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
-    (rs1Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
-    (true.B,                      io.reg.read1.data))) // from the register file
-  val rs2Val = PriorityMux(Seq(
-    (!rs2Addr.orR,                0.U),                // reading x0 always gives 0
-    (rs2Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
-    (rs2Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
-    (true.B,                      io.reg.read2.data))) // from the register file
-
-  d.bt := 0.U
-  d.l := false.B
   // deal with different kind inst
 
   d.type_ := instType
@@ -167,6 +193,23 @@ class ID extends Module {
         io.ex.oprd2 := 4.U
         //io.ex.opt   := OptCode.ADD //not necessary
         wregAddr := rdAddr
+      }
+      is(InstType.SYS) {
+        val fct3 = inst(14,12)
+
+        when(fct3.orR) {
+          io.csr.addr := csrAddr
+          io.ex.oprd1 := csrVal
+
+          io.wrCSROp.mode := fct3(1,0)
+          io.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
+
+          wregAddr := rdAddr
+        }
+        .otherwise {
+          //TODO: ECALL / EBREAK
+        }
+
       }
       is(InstType.BAD) {
         //TODO

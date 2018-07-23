@@ -5,11 +5,14 @@ import chisel3.util._
 
 class MEM extends Module {
   val io = IO(new Bundle {
-    val ex  = Flipped(new EX_MEM()) 
-    val mmu = new RAMOp()
+    val ex  = Flipped(new EX_MEM) 
+    val mmu = new RAMOp
 
     val exWrRegOp = Flipped(new WrRegOp)
     val wrRegOp = new WrRegOp
+
+    val exWrCSROp = Flipped(new WrCSROp)
+    val wrCSROp = new WrCSROp
   })
 
   val opt = RegInit(OptCode.ADD)
@@ -42,4 +45,23 @@ class MEM extends Module {
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.rdy  := true.B
   io.wrRegOp.data := wregData
+
+
+  val wCSRAddr  = RegInit(0.U(12.W))
+  val csrMode   = RegInit(0.U(2.W))
+  val csrOldVal = RegInit(0.U(32.W))
+  val csrRsVal  = RegInit(0.U(32.W))
+  val csrNewVal = RegInit(0.U(32.W))
+
+  wCSRAddr  := io.exWrCSROp.addr
+  csrMode   := io.exWrCSROp.mode
+  csrOldVal := io.exWrCSROp.oldVal
+  csrRsVal  := io.exWrCSROp.rsVal
+  csrNewVal := io.exWrCSROp.newVal
+  
+  io.wrCSROp.addr   := wCSRAddr
+  io.wrCSROp.oldVal := csrOldVal
+  io.wrCSROp.rsVal  := csrRsVal
+  io.wrCSROp.mode   := csrMode
+  io.wrCSROp.newVal := csrNewVal
 }
