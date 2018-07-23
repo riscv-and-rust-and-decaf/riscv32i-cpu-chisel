@@ -24,6 +24,12 @@ object RAMMode {
   def isWrite(x: UInt): Bool = x(3)
 }
 
+object CSRMODE {
+  val RW = 1.U(2.W)
+  val RS = 2.U(2.W)
+  val RC = 3.U(2.W)
+}
+
 object OptCode {
   val ADD = 0.U(5.W)
   val SUB = 1.U(5.W)
@@ -73,6 +79,8 @@ object InstType {
   val B = 4.U(3.W)
   val U = 5.U(3.W)
   val J = 6.U(3.W)
+
+  val SYS = 7.U(3.W) // CSR or ECALL
 }
 
 
@@ -125,7 +133,9 @@ object DecTable {
     Insts.AUIPC -> List(InstType.U, UType.AUIPC),
 
     Insts.JAL   -> List(InstType.J, OptCode.ADD),
-    Insts.JALR  -> List(InstType.I, OptCode.JALR)
+    Insts.JALR  -> List(InstType.I, OptCode.JALR),
+
+    Insts.SYS   -> List(InstType.SYS, OptCode.ADD) //Maybe ecall maybe csr
 
   )
 
@@ -181,4 +191,6 @@ object Insts { // idea from mini riscv
 //  // Jump & Link
   def JAL    = BitPat("b?????????????????????????1101111")
   def JALR   = BitPat("b?????????????????000?????1100111")
+// SYS
+  def SYS    = BitPat("b?????????????????????????1110011")
 }

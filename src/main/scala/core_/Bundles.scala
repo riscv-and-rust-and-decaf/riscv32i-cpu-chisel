@@ -32,6 +32,14 @@ class WrRegOp extends Bundle {
   val rdy  = Output(Bool())     // data might be ready in different stages e.g. EX and MEM
 }
 
+class WrCSROp extends Bundle {
+  val addr = Output(UInt(12.W))
+  val oldVal = Output(UInt(32.W))
+  val rsVal = Output(UInt(32.W))
+  val mode = Output(UInt(2.W)) // 0 if not write
+  val newVal = Output(UInt(32.W))
+}
+
 // represents an operation of "ram access"
 class RAMOp extends Bundle {
   val addr  = Output(UInt(32.W))
@@ -71,8 +79,14 @@ class ID_EX extends Bundle {
 
 class EX_MEM extends Bundle {
   val alu_out = Output(UInt(32.W))
-  val opt   = Output(UInt(5.W))
+  val opt     = Output(UInt(5.W))
 
   var store_data = Output(UInt(32.W)) // for Store Inst only
 }
+
+class ID_CSR extends Bundle {
+  val addr  = Output(UInt(12.W))
+  val rdata = Input(UInt(32.W)) 
+}
+
 
