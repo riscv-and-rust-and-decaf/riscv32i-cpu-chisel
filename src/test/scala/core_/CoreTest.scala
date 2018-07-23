@@ -4,29 +4,47 @@ import chisel3._
 import chisel3.iotesters._
 import devices._
 
+/*
+  After reset, tester should first set `ready` to false,
+  and load init data to RAM through `ram_init`.
+ */
 class CoreTestModule extends Module {
   val io = IO(new Bundle {
-    // debug things below
-    val debug = new CoreState()
+    val ready    = Input(Bool())
+    val ram_init = Flipped(new RAMOp())
+    val debug    = new CoreState()
   })
-  val d = io.debug
+  val d  = io.debug
 
-  val core = Module(new Core())
+  val core   = Module(new Core())
   val ioCtrl = Module(new IOManager())
-  val ram = Module(new MockRam(SrcBinReader.read_insts()))
-  val flash = Module(new NullDev())
+  val ram    = Module(new MockRam())
+  val flash  = Module(new NullDev())
   val serial = Module(new NullDev())
+
+  val cycle = RegInit(0.U(32.W))
+  when(io.ready) {
+    printf(p"Cycle $cycle\n")
+    cycle := cycle + 1.U
+  }
 
   core.io.dev       <> ioCtrl.io.core
   ioCtrl.io.ram     <> ram.io
   ioCtrl.io.flash   <> flash.io
   ioCtrl.io.serial  <> serial.io
   d                 <> core.d
+  core.reset := !io.ready
+  ioCtrl.reset := !io.ready
+  TestUtil.bindRAM(io.ready, io.ram_init, ioCtrl.io.ram, ram.io)
 }
 
-class CoreTestWithoutFw(c: CoreTestModule) extends PeekPokeTester(c) {
-  reset(10)
+class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
+  reset()
+  private val data = DataHelper.read_insts(fname)
+  TestUtil.loadRAM(this, c.io.ready, c.io.ram_init, data)
+}
 
+class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(5)
   expect(c.d.reg(1), 20)
 
@@ -61,8 +79,7 @@ class CoreTestWithoutFw(c: CoreTestModule) extends PeekPokeTester(c) {
 }
 
 
-class CoreTestWithFw(c: CoreTestModule) extends PeekPokeTester(c) {
-  reset(10)
+class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(4) // pipeline entry
   expect(c.d.reg(1), 20)
   step(1)
@@ -91,8 +108,7 @@ class CoreTestWithFw(c: CoreTestModule) extends PeekPokeTester(c) {
   expect(c.d.reg(5), "h_ffff_fff5".U)
 }
 
-class NaiveInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
-  reset(10)
+class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(4)
   expect(c.d.ifpc, 16)
   expect(c.d.reg(10), 10)
@@ -113,8 +129,7 @@ class NaiveInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
   expect(c.d.reg(1), 597)
 }
 
-class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
-  reset(10)
+class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(4)
   expect(c.d.ifpc, 16)
   expect(c.d.reg(1), "h_87654000".U)
@@ -144,8 +159,7 @@ class LoadStoreInstTest(c: CoreTestModule) extends PeekPokeTester(c) {
 }
 
 
-class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
-  reset(10)
+class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(3)                                      // all before l1 has entered pipeline
   for (_ <- 0 until 0x40) {
     step(1)
@@ -180,33 +194,28 @@ class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core module fwno" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test2.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTestWithoutFw(c)
-    } should be (true)
+      c => new CoreTestWithoutFw(c, "test_asm/test2.bin")
+    } should be(true)
   }
   "Core module fwyes" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test3.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTestWithFw(c)
-    } should be (true)
+      c => new CoreTestWithFw(c, "test_asm/test3.bin")
+    } should be(true)
   }
   "Core test 1+2+..10" should "eq to 55" in {
-    SrcBinReader.fname = "test_asm/test4.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new NaiveInstTest(c)
-    } should be (true)
+      c => new NaiveInstTest(c, "test_asm/test4.bin")
+    } should be(true)
   }
   "Core test simple load/store" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test5.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new LoadStoreInstTest(c)
+      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
     } should be (true)
   }
   "Core test 6" should "pass test" in {
-    SrcBinReader.fname = "test_asm/test6.bin"
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTest6(c)
+      c => new CoreTest6(c, "test_asm/test6.bin")
     } should be (true)
   }
 }
