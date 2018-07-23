@@ -26,6 +26,13 @@ class IOManager extends Module {
     val flash = new RAMOp
     val serial = new RAMOp
   })
+
+//  printf(p"[IO] IF: ${io.core.if_}\n")
+//  printf(p"[IO] MEM: ${io.core.mem}\n")
+//  printf(p"[IO] RAM: ${io.ram}\n")
+//  printf(p"[IO] Flash: ${io.flash}\n")
+//  printf(p"[IO] Serial: ${io.serial}\n")
+
   // Alias & Import
   private val mem = io.core.mem
   private val if_ = io.core.if_
@@ -69,19 +76,22 @@ class IOManager extends Module {
   // Route for IF
   when(if_.mode =/= RAMMode.NOP) {
     when(if_.addr.atRAM) {
-      if_ <> io.ram
       when(ramUsed) {
         if_ <> wait_device
+      }.otherwise {
+        if_ <> io.ram
       }
     }.elsewhen(if_.addr.atFlash) {
-      if_ <> io.flash
       when(flashUsed) {
         if_ <> wait_device
+      }.otherwise {
+        if_ <> io.flash
       }
     }.elsewhen(if_.addr.atSerial) {
-      if_ <> io.serial
       when(serialUsed) {
         if_ <> wait_device
+      }.otherwise {
+        if_ <> io.serial
       }
     }
   }
