@@ -2,7 +2,7 @@ package core_
 
 import chisel3._
 import chisel3.iotesters._
-import devices.{IOManager, MockRam, SrcBinReader}
+import devices._
 
 class CoreTestModule extends Module {
   val io = IO(new Bundle {
@@ -14,10 +14,14 @@ class CoreTestModule extends Module {
   val core = Module(new Core())
   val ioCtrl = Module(new IOManager())
   val ram = Module(new MockRam(SrcBinReader.read_insts()))
+  val flash = Module(new NullDev())
+  val serial = Module(new NullDev())
 
-  core.io.dev   <> ioCtrl.io.core
-  ioCtrl.io.ram <> ram.io
-  d             <> core.d
+  core.io.dev       <> ioCtrl.io.core
+  ioCtrl.io.ram     <> ram.io
+  ioCtrl.io.flash   <> flash.io
+  ioCtrl.io.serial  <> serial.io
+  d                 <> core.d
 }
 
 class CoreTestWithoutFw(c: CoreTestModule) extends PeekPokeTester(c) {
@@ -163,7 +167,7 @@ class CoreTest6(c: CoreTestModule) extends PeekPokeTester(c) {
       println("\n")
       step(1)
     }
-    expect(c.d.reg(29), 0x0)                    // to understand, draw picture yourslef
+    expect(c.d.reg(29), 0x0)                    // to understand, draw picture yourself
   }
   step(1)
   expect(c.d.ifpc, 0x34)

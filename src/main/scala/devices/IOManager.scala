@@ -3,33 +3,87 @@ package devices
 import core_._
 import chisel3._
 
+object MemoryRegionExt {
+  val RAM_BEGIN = 0x00000000L.U(32.W)
+  val RAM_END = 0x00400000L.U(32.W)
+  val FLASH_BEGIN = 0x00800000L.U(32.W)
+  val FLASH_END = 0x01000000L.U(32.W)
+  val SERIAL_BEGIN = 0x10000000L.U(32.W)
+  val SERIAL_END = 0x10000008L.U(32.W)
+
+  implicit def region(addr: UInt) = new {
+    def atRAM = addr >= RAM_BEGIN && addr < RAM_END
+    def atFlash = addr >= FLASH_BEGIN && addr < FLASH_END
+    def atSerial = addr >= SERIAL_BEGIN && addr < SERIAL_END
+  }
+}
+
 /// Do IO with a given physical address for Core
 class IOManager extends Module {
   val io = IO(new Bundle {
     val core = Flipped(new Core_IO)
-    val ram  = new RAMOp // Use addr(31) to indicate RAM1(0) or Serial(1)
-//    val flash = new RAMOp
+    val ram  = new RAMOp
+    val flash = new RAMOp
+    val serial = new RAMOp
   })
+  // Alias & Import
+  private val mem = io.core.mem
+  private val if_ = io.core.if_
+  import MemoryRegionExt.region
 
-  when(io.core.mem.mode === RAMMode.NOP) {
-    // printf("[IO] IF: ${io.core.if_}\n")
-    io.core.if_.ok := true.B
-    io.core.if_.rdata := io.ram.rdata
-    io.core.mem.ok := false.B
-    io.core.mem.rdata := 0.U
-    io.ram.addr := io.core.if_.addr
-    io.ram.wdata := io.core.if_.wdata
-    io.ram.mode := io.core.if_.mode
-  }.otherwise {
-    // printf(p"[IO] stalling IF; MEM: ${io.core.mem}\n")
-    io.core.if_.ok := false.B
-    io.core.if_.rdata := Const.NOP_INST
-    io.core.mem.ok := true.B
-    io.core.mem.rdata := io.ram.rdata
-    io.ram.addr := io.core.mem.addr
-    io.ram.wdata := io.core.mem.wdata
-    io.ram.mode := io.core.mem.mode
+  // Null IO
+  val null_op = Wire(new RAMOp)
+  null_op.mode := RAMMode.NOP
+  null_op.addr := 0.U
+  null_op.wdata := 0.U
+  null_op.ok := true.B
+  null_op.rdata := 0.U
+
+  // Connect to here if the target device is being used
+  val wait_device = Wire(new RAMOp)
+  wait_device := null_op
+  wait_device.ok := false.B
+
+  // Connect to null for all by default
+  io.ram <> null_op
+  io.flash <> null_op
+  io.serial <> null_op
+  mem <> null_op
+  if_ <> null_op
+
+  // Route for MEM
+  when(mem.mode =/= RAMMode.NOP) {
+    when(mem.addr.atRAM) {
+      mem <> io.ram
+    }.elsewhen(mem.addr.atFlash) {
+      mem <> io.flash
+    }.elsewhen(mem.addr.atSerial) {
+      mem <> io.serial
+    }
   }
-  // TODO: Impl
+
+  private val ramUsed    = mem.mode =/= RAMMode.NOP && mem.addr.atRAM
+  private val flashUsed  = mem.mode =/= RAMMode.NOP && mem.addr.atFlash
+  private val serialUsed = mem.mode =/= RAMMode.NOP && mem.addr.atSerial
+
+  // Route for IF
+  when(if_.mode =/= RAMMode.NOP) {
+    when(if_.addr.atRAM) {
+      if_ <> io.ram
+      when(ramUsed) {
+        if_ <> wait_device
+      }
+    }.elsewhen(if_.addr.atFlash) {
+      if_ <> io.flash
+      when(flashUsed) {
+        if_ <> wait_device
+      }
+    }.elsewhen(if_.addr.atSerial) {
+      if_ <> io.serial
+      when(serialUsed) {
+        if_ <> wait_device
+      }
+    }
+  }
 }
 
