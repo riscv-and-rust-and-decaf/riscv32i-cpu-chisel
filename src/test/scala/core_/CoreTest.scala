@@ -45,32 +45,32 @@ class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
 }
 
 class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(5)
+  step(10)
   expect(c.d.reg(1), 20)
 
-  step(5)
+  step(10)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
 
-  step(5)
+  step(10)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
 
-  step(5)
+  step(10)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
   expect(c.d.reg(4), "h_ffff_ffff".U)
 
-  step(5)
+  step(10)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
   expect(c.d.reg(4), "h_ffff_ffff".U)
   expect(c.d.reg(5), "h_ffff_fff5".U)
 
-  step(5)
+  step(10)
   expect(c.d.reg(1), "h_ffff_fff5".U)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
@@ -200,32 +200,32 @@ class CSRInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
 }
 
 class CoreTester extends ChiselFlatSpec {
-  val args = Array[String]()
+  val args = Array[String]("-fiwv") // output .vcd wave file
   "Core module fwno" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new CoreTestWithoutFw(c, "test_asm/test2.bin")
     } should be(true)
   }
-  "Core module fwyes" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTestWithFw(c, "test_asm/test3.bin")
-    } should be(true)
-  }
-  "Core test 1+2+..10" should "eq to 55" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new NaiveInstTest(c, "test_asm/test4.bin")
-    } should be(true)
-  }
-  "Core test simple load/store" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
-    } should be (true)
-  }
-  "Core test 6" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTest6(c, "test_asm/test6.bin")
-    } should be (true)
-  }
+//  "Core module fwyes" should "pass test" in {
+//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+//      c => new CoreTestWithFw(c, "test_asm/test3.bin")
+//    } should be(true)
+//  }
+//  "Core test 1+2+..10" should "eq to 55" in {
+//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+//      c => new NaiveInstTest(c, "test_asm/test4.bin")
+//    } should be(true)
+//  }
+//  "Core test simple load/store" should "pass test" in {
+//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+//      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
+//    } should be (true)
+//  }
+//  "Core test 6" should "pass test" in {
+//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+//      c => new CoreTest6(c, "test_asm/test6.bin")
+//    } should be (true)
+//  }
 }
 class CoreCSRTester extends ChiselFlatSpec {
   val args = Array[String]()

@@ -34,6 +34,8 @@ object TestUtil {
         tester.step(1)
       }
     }
+    tester.poke(ram_init.mode, 0)
+    tester.step(5)
     tester.poke(ready, 1)
   }
 }
