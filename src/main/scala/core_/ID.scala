@@ -41,7 +41,7 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
   when (!io.iff.id_stall) {
-    inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+    inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
   }
 
   val pc = RegInit(0.U(32.W))
@@ -93,8 +93,8 @@ class ID extends Module {
   d.l := false.B
 
   //Null Init
-  io.iff.if_branch  := false.B
-  io.iff.branch_tar := 0.U
+  io.iff.branch.valid := false.B
+  io.iff.branch.bits  := 0.U
 
   io.ex.oprd1 := 0.U
   io.ex.oprd2 := 0.U
@@ -131,7 +131,7 @@ class ID extends Module {
     // flush current instruction
     wregAddr := 0.U             // don't write registers
     io.ex.opt := OptCode.ADD    // don't write memory
-    io.iff.if_branch := false.B // don't branch
+    io.iff.branch.valid := false.B // don't branch
     io.iff.id_stall := true.B   // tell IF not to advance
   } .otherwise {
     io.iff.id_stall := false.B
@@ -148,8 +148,8 @@ class ID extends Module {
         wregAddr := rdAddr
 
         when(decRes(DecTable.OPT) === OptCode.JALR) {
-          io.iff.branch_tar := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
-          io.iff.if_branch  := true.B
+          io.iff.branch.bits := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
+          io.iff.branch.valid  := true.B
 
           io.ex.oprd1 := pc
           io.ex.oprd2 := 4.U
@@ -164,12 +164,12 @@ class ID extends Module {
       }
       is(InstType.B) {
         imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
-        io.iff.branch_tar := pc + imm.asUInt
+        io.iff.branch.bits := pc + imm.asUInt
         val bt = decRes(DecTable.OPT)
         val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
         val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
         val e = (rs1Val === rs2Val)
-        io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
+        io.iff.branch.valid := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
         io.ex.opt := OptCode.ADD
 
@@ -186,8 +186,8 @@ class ID extends Module {
       }
       is(InstType.J) {
         imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
-        io.iff.branch_tar := pc + imm.asUInt
-        io.iff.if_branch  := true.B
+        io.iff.branch.bits := pc + imm.asUInt
+        io.iff.branch.valid  := true.B
 
         io.ex.oprd1 := pc
         io.ex.oprd2 := 4.U

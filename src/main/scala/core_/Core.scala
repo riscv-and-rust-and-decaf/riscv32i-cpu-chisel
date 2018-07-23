@@ -53,7 +53,7 @@ class Core extends Module {
   d.reg       <> reg.io.log
   d.ifinst    <> iff.io.id.inst
   d.ifpc      <> iff.io.id.pc
-  d.id_branch <> id.io.iff.branch_tar
+  d.id_branch <> id.io.iff.branch.bits
   d.idex      <> id.io.ex
   d.id        <> id.d
 }

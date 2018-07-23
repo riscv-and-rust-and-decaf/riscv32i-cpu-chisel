@@ -26,7 +26,7 @@ class IDTest(t: ID) extends PeekPokeTester(t) {
   expect(t.d.opt, BType.BNE)
   expect(t.d.bt, "b0_1010".U)
   expect(t.d.l, true.B)
-  expect(t.io.iff.if_branch, true.B)
+  expect(t.io.iff.branch.valid, true.B)
 
 }
 

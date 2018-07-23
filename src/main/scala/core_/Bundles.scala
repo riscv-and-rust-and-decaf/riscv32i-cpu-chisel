@@ -1,6 +1,7 @@
 package core_
 
 import chisel3._
+import chisel3.util.Valid
 
 /*
   Interface from Core.MMU to IOManager
@@ -59,8 +60,7 @@ class RdRegOp extends Bundle {
 class IF_ID extends Bundle {
   val pc   = Output(UInt(32.W))
   val inst = Output(UInt(32.W))
-  val if_branch  = Input(Bool())
-  val branch_tar = Input(UInt(32.W))
+  val branch  = Input(Valid(UInt(32.W)))
   val id_stall = Input(Bool())
 }
 

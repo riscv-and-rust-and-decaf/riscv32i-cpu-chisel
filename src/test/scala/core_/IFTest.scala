@@ -18,8 +18,8 @@ class IFTestModule extends Module {
   io.id.inst := gatedIDInst
   io.id.pc := gatedIDpc
 
-  ifmod.io.id.if_branch := io.id.if_branch 
-  ifmod.io.id.branch_tar := io.id.branch_tar
+  ifmod.io.id.branch.valid := io.id.branch.valid 
+  ifmod.io.id.branch.bits := io.id.branch.bits
 
   ifmod.io.ram <> mmu.io.iff
 
@@ -32,7 +32,7 @@ class IFTestModule extends Module {
 class IFTest(t: IFTestModule) extends PeekPokeTester(t) {
   // sequential if
   reset(10)
-  poke(t.io.id.if_branch, 0)
+  poke(t.io.id.branch.valid, 0)
   poke(t.io.id.id_stall, 0)
   expect(t.io.id.pc, 0)
   for (i <- 0 until 7) {
@@ -43,7 +43,7 @@ class IFTest(t: IFTestModule) extends PeekPokeTester(t) {
 
   // branch
   reset(10)   // press rst for more than a while pls
-  poke(t.io.id.if_branch, 0)
+  poke(t.io.id.branch.valid, 0)
   expect(t.io.id.pc, 0)
   for (i <- 0 until 4) {
     step(1)
@@ -51,8 +51,8 @@ class IFTest(t: IFTestModule) extends PeekPokeTester(t) {
     expect(t.io.id.inst, i*0x11110000 + (i+1)*0x00001111)
   }
   // 3 instr left IF
-  poke(t.io.id.if_branch, 1)
-  poke(t.io.id.branch_tar, 40)
+  poke(t.io.id.branch.valid, 1)
+  poke(t.io.id.branch.bits, 40)
   step(1)
   expect(t.io.id.pc, 4*4)
   expect(t.io.id.inst, 0x44445555)

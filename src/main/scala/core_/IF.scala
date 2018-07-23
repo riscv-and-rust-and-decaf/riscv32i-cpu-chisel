@@ -15,9 +15,9 @@ class IF extends Module {
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
   val nextPC = PriorityMux(Seq(
-    (io.id.if_branch, io.id.branch_tar),  // even if stalled, acknowledge branch
-    (stall,           pc),                // when stalled, don't advance
-    (true.B,          pc + 4.U)))
+    (io.id.branch.valid, io.id.branch.bits),  // even if stalled, acknowledge branch
+    (stall,              pc),                // when stalled, don't advance
+    (true.B,             pc + 4.U)))
   pc := nextPC
 
   // instruction fetch
