@@ -13,7 +13,18 @@ class MEM extends Module {
 
     val exWrCSROp = Flipped(new WrCSROp)
     val wrCSROp = new WrCSROp
+    
+    //exception
+    val exExcep = Flipped(new ExcepStatus)
+    val excep  = new ExcepStatus // to CSR
+
+    val csrExcepEn = Input(Bool())
   })
+  
+  val excepEn = RegInit(false.B)
+  val excepCode = RegInit(0.U(32.W))
+  excepEn := io.exExcep.en
+  excepCode := io.exExcep.code
 
   val opt = RegInit(OptCode.ADD)
   opt := io.ex.opt
@@ -64,4 +75,15 @@ class MEM extends Module {
   io.wrCSROp.rsVal  := csrRsVal
   io.wrCSROp.mode   := csrMode
   io.wrCSROp.newVal := csrNewVal
+
+  when(io.csrExcepEn) {
+    excepEn := false.B
+  }
+  when(excepEn || io.csrExcepEn) {
+    wregAddr := 0.U
+    csrMode := 0.U
+    io.mmu.mode := RAMMode.NOP 
+  }
+  io.excep.en   := excepEn
+  io.excep.code := excepCode
 }

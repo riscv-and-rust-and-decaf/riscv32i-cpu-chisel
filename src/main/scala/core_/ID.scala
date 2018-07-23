@@ -10,6 +10,7 @@ class IDState extends Bundle {
   val opt = Output(UInt(5.W))
   val pc = Output(UInt(5.W))
   val imm = Output(SInt(32.W))
+
 }
 
 class ID extends Module {
@@ -20,6 +21,12 @@ class ID extends Module {
     val wrRegOp = new WrRegOp
     val wrCSROp = new WrCSROp
     val csr = new ID_CSR
+  
+    //exception
+    val ifExcep = Flipped(new ExcepStatus)
+    val excep  = new ExcepStatus
+  
+    val csrExcepEn = Input(Bool())
 
     // forwarding
     val exWrRegOp = Flipped(new WrRegOp)
@@ -31,6 +38,15 @@ class ID extends Module {
     //output log
     val debug = new IDState()
   })
+
+  val excepEn = RegInit(false.B)
+  val excepCode = RegInit(0.U(32.W))
+  excepEn := io.ifExcep.en
+  excepCode := io.ifExcep.code
+
+
+  val flush = io.csrExcepEn
+
   val d = io.debug
 
   val inst = RegInit(Const.NOP_INST)
@@ -42,6 +58,10 @@ class ID extends Module {
   //  when stalled.
   when (!io.iff.id_stall) {
     inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+  }
+
+  when(flush) {
+    inst := Const.NOP_INST
   }
 
   val pc = RegInit(0.U(32.W))
@@ -207,12 +227,19 @@ class ID extends Module {
           wregAddr := rdAddr
         }
         .otherwise {
-          //TODO: ECALL / EBREAK
+          //TODO:  EBREAK
+          when(!excepEn) {
+            excepEn := true.B
+            excepCode := 8.U
+          }
         }
 
       }
       is(InstType.BAD) {
-        //TODO
+        when(!excepEn) {
+          excepEn := true.B
+          excepCode := 2.U
+        }
       }
     }
   }
@@ -220,4 +247,7 @@ class ID extends Module {
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.data := 0.U
   io.wrRegOp.rdy  := false.B
+
+  io.excep.en   := excepEn
+  io.excep.code := excepCode
 }

@@ -27,6 +27,7 @@ class Core extends Module {
 
   iff.io.ram   <> mmu.io.iff
   iff.io.id    <> id.io.iff
+  iff.io.excep <> id.io.ifExcep
 
   id.io.ex         <> ex.io.id
   id.io.reg        <> reg.io.id
@@ -37,16 +38,27 @@ class Core extends Module {
   id.io.exWrCSROp  <> ex.io.wrCSROp
   id.io.memWrCSROp <> mem.io.wrCSROp
   id.io.wrCSROp    <> ex.io.idWrCSROp
+  id.io.excep      <> ex.io.idExcep
 
   ex.io.mem     <> mem.io.ex
   ex.io.wrRegOp <> mem.io.exWrRegOp
   ex.io.wrCSROp <> mem.io.exWrCSROp
+  ex.io.excep   <> mem.io.exExcep
 
   mem.io.mmu     <> mmu.io.mem
   mem.io.wrRegOp <> reg.io.mem
   mem.io.wrCSROp <> csr.io.mem
+  mem.io.excep   <> csr.io.memExcep
 
   mmu.io.dev <> io.dev
+
+  //flush of exceptions
+  iff.io.csrExcepEn := csr.io.csrExcepEn
+  iff.io.csrExcepPc := csr.io.csrExcepPc
+  id.io.csrExcepEn := csr.io.csrExcepEn
+  ex.io.csrExcepEn := csr.io.csrExcepEn
+  mem.io.csrExcepEn := csr.io.csrExcepEn
+
 
   // all the fxxking debug things... fxxk chisel
   val d = io.debug

@@ -12,7 +12,21 @@ class EX extends Module {
     val wrRegOp = new WrRegOp
     val idWrCSROp = Flipped(new WrCSROp)
     val wrCSROp = new WrCSROp
+
+    //exception
+    val idExcep = Flipped(new ExcepStatus)
+    val excep  = new ExcepStatus
+
+    val csrExcepEn = Input(Bool())
+
   })
+  
+  val excepEn = RegInit(false.B)
+  val excepCode = RegInit(0.U(32.W))
+  excepEn := io.idExcep.en
+  excepCode := io.idExcep.code
+
+  val flush = io.csrExcepEn
 
   val a = RegInit(0.U(32.W))
   a := io.id.oprd1
@@ -20,6 +34,8 @@ class EX extends Module {
   b := io.id.oprd2
   val opt = RegInit(OptCode.ADD)
   opt := io.id.opt
+
+
 
   val shamt = b(4, 0)
 
@@ -75,5 +91,15 @@ class EX extends Module {
     CSRMODE.RC -> (csrOldVal & ~csrRsVal)
   ))
 
+  io.excep.en   := excepEn
+  io.excep.code := excepCode
+  
+  when(flush) {
+    opt := OptCode.ADD
+    wregAddr := 0.U
+    csrMode := 0.U
+    excepEn := false.B
+    
+  }
 
 }

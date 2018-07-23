@@ -7,6 +7,9 @@ import Const._
 import OptCode._
 
 class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
+  poke(mem.io.exExcep.en, false.B)
+  poke(mem.io.csrExcepEn, false.B)
+  
   poke(mem.io.ex.opt, SUB)
   poke(mem.io.exWrRegOp.addr, 10)
   poke(mem.io.exWrRegOp.data, 44)

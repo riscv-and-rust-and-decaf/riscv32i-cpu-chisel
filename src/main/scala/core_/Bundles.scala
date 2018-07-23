@@ -89,4 +89,7 @@ class ID_CSR extends Bundle {
   val rdata = Input(UInt(32.W)) 
 }
 
-
+class ExcepStatus extends Bundle {
+  val en   = Output(Bool())
+  val code = Output(UInt(32.W))
+}

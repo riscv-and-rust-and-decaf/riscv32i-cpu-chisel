@@ -8,6 +8,11 @@ class CSR extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_CSR)
     val mem = Flipped(new WrCSROp)
+
+    val memExcep = Flipped(new ExcepStatus)
+
+    val csrExcepEn = Output(Bool())
+    val csrExcepPc = Output(UInt(32.W))
   })
 
   object PRV {
@@ -97,6 +102,26 @@ class CSR extends Module {
       is(ADDR.mip) {mip := io.mem.newVal}
     }
   }
+
+  val pc = Wire(UInt(32.W))
+  val excep = RegInit(false.B)
+
+  excep := io.memExcep.en
+
+  when(io.memExcep.en) {
+    //TODO:fix bug, add pc field
+    //mepc   := io.memExcep.pc
+    mcause := Mux(io.memExcep.code === 8.U,
+      io.memExcep.code + prv, 
+      io.memExcep.code)
+  }
+
+  pc := Mux(mtvec(1,0) === 0.U,
+    mtvec(31,2),
+    mtvec(31,2) + 4.U * mcause)
+
+  io.csrExcepPc := pc
+  io.csrExcepEn := excep
 
 }
 
