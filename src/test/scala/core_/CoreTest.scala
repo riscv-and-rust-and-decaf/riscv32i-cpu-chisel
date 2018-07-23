@@ -20,7 +20,7 @@ class CoreTestModule extends Module {
   val ioCtrl = Module(new IOManager())
   val ram    = Module(new MockRam())
   val flash  = Module(new NullDev())
-  val serial = Module(new NullDev())
+  val serial = Module(new MockSerial())
 
   val cycle = RegInit(0.U(32.W))
   when(io.ready) {
