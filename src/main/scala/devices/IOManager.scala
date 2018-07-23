@@ -39,24 +39,27 @@ class IOManager extends Module {
   import MemoryRegionExt.region
 
   // Null IO
-  val null_op = Wire(new RAMOp)
-  null_op.mode := RAMMode.NOP
-  null_op.addr := 0.U
-  null_op.wdata := 0.U
-  null_op.ok := true.B
-  null_op.rdata := 0.U
-
+  val null_device = Module(new NullDev)
+  val null_user   = Module(new Module {
+    val io = IO(new RAMOp)
+    io.addr := 0.U
+    io.mode := 0.U
+    io.wdata := 0.U
+  })
   // Connect to here if the target device is being used
-  val wait_device = Wire(new RAMOp)
-  wait_device := null_op
-  wait_device.ok := false.B
+  val wait_device = Module(new Module {
+    val io = IO(Flipped(new RAMOp))
+    io.ok := false.B
+    io.rdata := 0.U
+  })
+  wait_device.io <> null_user.io
 
   // Connect to null for all by default
-  io.ram <> null_op
-  io.flash <> null_op
-  io.serial <> null_op
-  mem <> null_op
-  if_ <> null_op
+  io.ram <> null_user.io
+  io.flash <> null_user.io
+  io.serial <> null_user.io
+  mem <> null_device.io
+  if_ <> null_device.io
 
   // Route for MEM
   when(mem.mode =/= RAMMode.NOP) {
@@ -77,19 +80,19 @@ class IOManager extends Module {
   when(if_.mode =/= RAMMode.NOP) {
     when(if_.addr.atRAM) {
       when(ramUsed) {
-        if_ <> wait_device
+        if_ <> wait_device.io
       }.otherwise {
         if_ <> io.ram
       }
     }.elsewhen(if_.addr.atFlash) {
       when(flashUsed) {
-        if_ <> wait_device
+        if_ <> wait_device.io
       }.otherwise {
         if_ <> io.flash
       }
     }.elsewhen(if_.addr.atSerial) {
       when(serialUsed) {
-        if_ <> wait_device
+        if_ <> wait_device.io
       }.otherwise {
         if_ <> io.serial
       }
