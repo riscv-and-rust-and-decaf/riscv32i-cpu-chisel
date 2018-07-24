@@ -8,18 +8,19 @@ class EX extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_EX)
     val mem = new EX_MEM
-    val idWrRegOp = Flipped(new WrRegOp)
     val wrRegOp = new WrRegOp
-    val idWrCSROp = Flipped(new WrCSROp)
     val wrCSROp = new WrCSROp
   })
 
-  val a = RegInit(0.U(32.W))
-  a := io.id.oprd1
-  val b = RegInit(0.U(32.W))
-  b := io.id.oprd2
-  val opt = RegInit(OptCode.ADD)
-  opt := io.id.opt
+  // Stall
+  io.id.ready := io.mem.ready
+
+  //------------------- ALU ----------------------
+
+  // Lock input
+  val a = RegNext(io.id.oprd1, init=0.U(32.W))
+  val b = RegNext(io.id.oprd2, init=0.U(32.W))
+  val opt = RegNext(io.id.opt, init=OptCode.ADD)
 
   val shamt = b(4, 0)
 
@@ -42,16 +43,20 @@ class EX extends Module {
   )
   io.mem.alu_out := aluRes
 
-  val wregAddr = RegInit(0.U(5.W))
-  wregAddr := io.idWrRegOp.addr
+  //------------------- Reg ----------------------
+
+  // Lock input
+  val wregAddr = RegNext(io.id.wrRegOp.addr, init=0.U(5.W))
+  val store_data = RegNext(io.id.store_data, init=0.U(32.W))
+
   io.wrRegOp.addr := wregAddr
   io.wrRegOp.data := aluRes
   io.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
 
   io.mem.opt       := opt
-  val store_data = RegInit(0.U(32.W))
-  store_data := io.id.store_data
   io.mem.store_data := store_data
+
+  //------------------- CSR ----------------------
 
   val wCSRAddr  = RegInit(0.U(12.W))
   val csrMode   = RegInit(0.U(2.W))
@@ -59,11 +64,11 @@ class EX extends Module {
   val csrRsVal  = RegInit(0.U(32.W))
   val csrNewVal = RegInit(0.U(32.W))
 
-  wCSRAddr  := io.idWrCSROp.addr
-  csrMode   := io.idWrCSROp.mode
-  csrOldVal := io.idWrCSROp.oldVal
-  csrRsVal  := io.idWrCSROp.rsVal
-  csrNewVal := io.idWrCSROp.newVal
+  wCSRAddr  := io.id.wrCSROp.addr
+  csrMode   := io.id.wrCSROp.mode
+  csrOldVal := io.id.wrCSROp.oldVal
+  csrRsVal  := io.id.wrCSROp.rsVal
+  csrNewVal := io.id.wrCSROp.newVal
   
   io.wrCSROp.addr   := wCSRAddr
   io.wrCSROp.oldVal := csrOldVal

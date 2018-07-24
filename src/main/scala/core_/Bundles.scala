@@ -23,7 +23,6 @@ import chisel3.util.Valid
 class Core_IO extends Bundle {
   val if_ = new RAMOp()
   val mem = new RAMOp()
-//  val mmu = new RAMOp()
 }
 
 // repesents an operation of "writing registers", when data might not be ready
@@ -58,10 +57,10 @@ class RdRegOp extends Bundle {
 }
 
 class IF_ID extends Bundle {
-  val pc   = Output(UInt(32.W))
-  val inst = Output(UInt(32.W))
-  val branch  = Input(Valid(UInt(32.W)))
-  val id_stall = Input(Bool())
+  val pc     = Output(UInt(32.W))
+  val inst   = Output(UInt(32.W))
+  val branch = Input(Valid(UInt(32.W)))
+  val ready  = Input(Bool())
 }
 
 class ID_Reg extends Bundle {
@@ -69,19 +68,24 @@ class ID_Reg extends Bundle {
   val read2 = new RdRegOp()
 }
 
-class ID_EX extends Bundle {
-  val oprd1 = Output(UInt(32.W))
-  val oprd2 = Output(UInt(32.W))
-  val opt   = Output(UInt(5.W))
-
+class ID_EX_Output extends Bundle {
+  val oprd1      = Output(UInt(32.W))
+  val oprd2      = Output(UInt(32.W))
+  val opt        = Output(UInt(5.W))
+  val wrRegOp    = Output(new WrRegOp)
+  val wrCSROp    = Output(new WrCSROp)
   var store_data = Output(UInt(32.W)) // for Store Inst only
+}
+
+class ID_EX extends ID_EX_Output {
+  var ready = Input(Bool())
 }
 
 class EX_MEM extends Bundle {
   val alu_out = Output(UInt(32.W))
   val opt     = Output(UInt(5.W))
-
   var store_data = Output(UInt(32.W)) // for Store Inst only
+  var ready   = Input(Bool())
 }
 
 class ID_CSR extends Bundle {

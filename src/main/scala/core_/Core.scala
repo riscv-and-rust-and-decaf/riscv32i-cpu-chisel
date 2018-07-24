@@ -3,7 +3,7 @@ package core_
 import chisel3._
 
 class CoreState extends Bundle {
-  val idex      = new ID_EX()
+  val idex      = new ID_EX_Output()
   val id_branch = Output(UInt(32.W))
   val ifinst    = Output(UInt(32.W))
   val ifpc      = Output(UInt(32.W))
@@ -25,18 +25,16 @@ class Core extends Module {
   val mmu = Module(new MMU())
   val csr = Module(new CSR())
 
-  iff.io.ram   <> mmu.io.iff
+  iff.io.mmu   <> mmu.io.iff
   iff.io.id    <> id.io.iff
 
   id.io.ex         <> ex.io.id
   id.io.reg        <> reg.io.id
   id.io.csr        <> csr.io.id 
-  id.io.wrRegOp    <> ex.io.idWrRegOp
   id.io.exWrRegOp  <> ex.io.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
   id.io.exWrCSROp  <> ex.io.wrCSROp
   id.io.memWrCSROp <> mem.io.wrCSROp
-  id.io.wrCSROp    <> ex.io.idWrCSROp
 
   ex.io.mem     <> mem.io.ex
   ex.io.wrRegOp <> mem.io.exWrRegOp
@@ -54,6 +52,6 @@ class Core extends Module {
   d.ifinst    <> iff.io.id.inst
   d.ifpc      <> iff.io.id.pc
   d.id_branch <> id.io.iff.branch.bits
-  d.idex      <> id.io.ex
+  d.idex      <> id.io.ex.asTypeOf(new ID_EX_Output)
   d.id        <> id.d
 }

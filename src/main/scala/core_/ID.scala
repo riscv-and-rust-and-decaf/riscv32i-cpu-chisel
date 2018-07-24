@@ -17,8 +17,6 @@ class ID extends Module {
     val iff = Flipped(new IF_ID)  // naming conflict if use `if`
     val reg = new ID_Reg
     val ex = new ID_EX
-    val wrRegOp = new WrRegOp
-    val wrCSROp = new WrCSROp
     val csr = new ID_CSR
 
     // forwarding
@@ -40,7 +38,7 @@ class ID extends Module {
   // However when IF sees a `stall', it simply gives out a `nop'.
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
-  when (!io.iff.id_stall) {
+  when (io.iff.ready) {
     inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
   }
 
@@ -100,16 +98,18 @@ class ID extends Module {
   io.ex.oprd2 := 0.U
   io.ex.opt := decRes(DecTable.OPT)
   io.ex.store_data := 0.U
-  val wregAddr = Wire(UInt(5.W))
+  io.ex.wrRegOp.data := 0.U
+  io.ex.wrRegOp.rdy  := false.B
+  val wregAddr = io.ex.wrRegOp.addr
   wregAddr := 0.U
 
   io.csr.addr := 0.U
 
-  io.wrCSROp.mode := 0.U
-  io.wrCSROp.addr := csrAddr // don't care when mode==0
-  io.wrCSROp.oldVal := csrVal
-  io.wrCSROp.rsVal := 0.U
-  io.wrCSROp.newVal := 0.U
+  io.ex.wrCSROp.mode := 0.U
+  io.ex.wrCSROp.addr := csrAddr // don't care when mode==0
+  io.ex.wrCSROp.oldVal := csrVal
+  io.ex.wrCSROp.rsVal := 0.U
+  io.ex.wrCSROp.newVal := 0.U
 
   imm := 0.S
 
@@ -132,9 +132,9 @@ class ID extends Module {
     wregAddr := 0.U             // don't write registers
     io.ex.opt := OptCode.ADD    // don't write memory
     io.iff.branch.valid := false.B // don't branch
-    io.iff.id_stall := true.B   // tell IF not to advance
+    io.iff.ready := false.B     // tell IF not to advance
   } .otherwise {
-    io.iff.id_stall := false.B
+    io.iff.ready := true.B
     switch(instType) {
       is(InstType.R) {
         io.ex.oprd1 := rs1Val
@@ -201,8 +201,8 @@ class ID extends Module {
           io.csr.addr := csrAddr
           io.ex.oprd1 := csrVal
 
-          io.wrCSROp.mode := fct3(1,0)
-          io.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
+          io.ex.wrCSROp.mode := fct3(1,0)
+          io.ex.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
 
           wregAddr := rdAddr
         }
@@ -216,8 +216,4 @@ class ID extends Module {
       }
     }
   }
-
-  io.wrRegOp.addr := wregAddr
-  io.wrRegOp.data := 0.U
-  io.wrRegOp.rdy  := false.B
 }

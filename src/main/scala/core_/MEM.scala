@@ -5,31 +5,29 @@ import chisel3.util._
 
 class MEM extends Module {
   val io = IO(new Bundle {
-    val ex  = Flipped(new EX_MEM) 
+    val ex  = Flipped(new EX_MEM)
     val mmu = new RAMOp
 
     val exWrRegOp = Flipped(new WrRegOp)
-    val wrRegOp = new WrRegOp
+    val wrRegOp   = new WrRegOp
 
     val exWrCSROp = Flipped(new WrCSROp)
-    val wrCSROp = new WrCSROp
+    val wrCSROp   = new WrCSROp
   })
 
-  val opt = RegInit(OptCode.ADD)
-  opt := io.ex.opt
-  val store_data = RegInit(0.U(32.W))
-  store_data := io.ex.store_data
-  val alu_out = RegInit(0.U(32.W))
-  alu_out := io.ex.alu_out
-  val wregAddr = RegInit(0.U(32.W))
-  wregAddr := io.exWrRegOp.addr
-  val exWrRegData = RegInit(0.U(32.W))
-  exWrRegData := io.exWrRegOp.data
+  // Stall
+  io.ex.ready := io.mmu.ok
 
-  val loadInsts = Seq(OptCode.LW, OptCode.LB, OptCode.LH,
-    OptCode.LBU, OptCode.LHU)
-  val isLoad = loadInsts.map(x => x === opt).reduce(_ || _)
-  val wregData = Mux(isLoad, io.mmu.rdata, exWrRegData)
+  // Lock input
+  val opt         = RegNext(io.ex.opt,          init = OptCode.ADD)
+  val store_data  = RegNext(io.ex.store_data,   init = 0.U(32.W))
+  val alu_out     = RegNext(io.ex.alu_out,      init = 0.U(32.W))
+  val wregAddr    = RegNext(io.exWrRegOp.addr,  init = 0.U(32.W))
+  val exWrRegData = RegNext(io.exWrRegOp.data,  init = 0.U(32.W))
+
+  val loadInsts = Seq(OptCode.LW, OptCode.LB, OptCode.LH, OptCode.LBU, OptCode.LHU)
+  val isLoad    = loadInsts.map(x => x === opt).reduce(_ || _)
+  val wregData  = Mux(isLoad, io.mmu.rdata, exWrRegData)
 
   io.mmu.addr  := alu_out
   io.mmu.wdata := store_data
@@ -46,6 +44,7 @@ class MEM extends Module {
   io.wrRegOp.rdy  := true.B
   io.wrRegOp.data := wregData
 
+  //------------------- CSR ----------------------
 
   val wCSRAddr  = RegInit(0.U(12.W))
   val csrMode   = RegInit(0.U(2.W))

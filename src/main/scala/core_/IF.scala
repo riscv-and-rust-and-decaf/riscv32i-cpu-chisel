@@ -6,11 +6,11 @@ import chisel3.util._
 
 class IF extends Module {
   val io = IO(new Bundle {
-    val ram = new RAMOp()
-    val id = new IF_ID()
+    val mmu = new RAMOp()
+    val id  = new IF_ID()
   })
 
-  val stall = !io.ram.ok || io.id.id_stall
+  val stall = !io.mmu.ok || !io.id.ready
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
@@ -21,11 +21,11 @@ class IF extends Module {
   pc := nextPC
 
   // instruction fetch
-  io.ram.addr  := pc; // fetch current instruction
-  io.ram.mode  := RAMMode.LW
-  io.ram.wdata := 0.U
+  io.mmu.addr  := pc; // fetch current instruction
+  io.mmu.mode  := RAMMode.LW
+  io.mmu.wdata := 0.U
 
   // feed to ID
   io.id.pc   := pc
-  io.id.inst := Mux(stall, Const.NOP_INST, io.ram.rdata)
+  io.id.inst := Mux(stall, Const.NOP_INST, io.mmu.rdata)
 }
