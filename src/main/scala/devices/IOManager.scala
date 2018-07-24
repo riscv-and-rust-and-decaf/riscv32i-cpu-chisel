@@ -29,7 +29,6 @@ object MemoryRegionExt {
  Guarantee:
  - Write op from MEM will OK after 1 cycle.
 
- TODO: Optimize and rewrite
   */
 class IOManager extends Module {
   val io = IO(new Bundle {
@@ -66,79 +65,72 @@ class IOManager extends Module {
   mem <> null_device.io
   if_ <> null_device.io
 
-  // Route for MEM
-  when(mem.mode =/= RAMMode.NOP) {
+  val waitNone :: waitRAM :: waitFlash :: waitSerial :: Nil = Enum(4)
+  val ifWait  = RegInit(waitNone)
+  val memWait = RegInit(waitNone)
+
+  // Handle output
+  def bindOutput(user: RAMOp, device: RAMOp): Unit = {
+    user.rdata := device.rdata
+    user.ok := device.ok
+  }
+  def bindInput(user: RAMOp, device: RAMOp): Unit = {
+    device.mode := user.mode
+    device.addr := user.addr
+    device.wdata := user.wdata
+  }
+  def handleOutput(status: UInt, user: RAMOp): Unit = {
+    switch(status) {
+      is(waitRAM)     { bindOutput(user, io.ram) }
+      is(waitFlash)   { bindOutput(user, io.flash) }
+      is(waitSerial)  { bindOutput(user, io.serial) }
+    }
+  }
+  handleOutput(ifWait, if_)
+  handleOutput(memWait, mem)
+
+  // Status after output
+  val flashFree = ifWait =/= waitFlash && memWait =/= waitFlash
+  ifWait := Mux(ifWait =/= waitNone && !if_.ok, ifWait, waitNone)
+  memWait := Mux(memWait =/= waitNone && !mem.ok, memWait, waitNone)
+
+  // Handle input. MEM first.
+  when(memWait === waitNone && mem.mode =/= RAMMode.NOP) {
     when(mem.addr.atRAM) {
-      mem <> io.ram
-    }.elsewhen(mem.addr.atFlash) {
-      mem <> io.flash
+      bindInput(mem, io.ram)
+      when(RAMMode.isWrite(mem.mode)) {
+        memWait := waitNone
+        mem.ok := true.B
+      }.otherwise {
+        memWait := waitRAM
+        mem.ok := false.B
+      }
+    }.elsewhen(mem.addr.atFlash && flashFree) {
+      bindInput(mem, io.flash)
+      memWait := waitFlash
     }.elsewhen(mem.addr.atSerial) {
-      mem <> io.serial
-    }
-  }
-
-  private val ramUsed    = mem.mode =/= RAMMode.NOP && mem.addr.atRAM
-  private val flashUsed  = mem.mode =/= RAMMode.NOP && mem.addr.atFlash
-
-  // IF status
-  val sReady :: sRetry :: sWait :: Nil = Enum(3)
-  val if_status                        = RegInit(sReady)
-  val if_lock_addr                     = RegInit(0.U)
-  val if_lock_mode                     = RegInit(0.U)
-  val if_conflict                      = Wire(Bool())
-  if_conflict := false.B  // test later
-
-  // Status => Next status
-  switch(if_status) {
-    is(sReady) {
-      if_status := PriorityMux(Seq(
-        (if_.mode === RAMMode.NOP, sReady),
-        (if_conflict, sRetry),
-        (true.B, sWait)
-      ))
-      when(if_.mode =/= RAMMode.NOP) {
-        if_lock_addr := if_.addr
-        if_lock_mode := if_.mode
-      }
-    }
-    is(sRetry) {
-      if_status := Mux(if_conflict, sRetry, sWait)
-    }
-    is(sWait) {
-      if_status := Mux(if_.ok, sReady, sWait)
-    }
-  }
-
-  // IF Status => IF op this cycle
-  val if_mode = Mux(if_status === sReady, if_.mode, if_lock_mode)
-  val if_addr = Mux(if_status === sReady, if_.addr, if_lock_addr)
-
-  // Route for IF. Test if conflict.
-  when(if_mode =/= RAMMode.NOP) {
-    when(if_addr.atRAM) {
-      when(ramUsed) {
-        if_conflict := true.B
+      bindInput(mem, io.serial)
+      when(RAMMode.isWrite(mem.mode)) {
+        memWait := waitNone
+        mem.ok := true.B
       }.otherwise {
-        io.ram.mode := if_mode
-        io.ram.addr := if_addr
-        if_.rdata := io.ram.rdata
-        if_.ok := io.ram.ok
-      }
-    }.elsewhen(if_addr.atFlash) {
-      when(flashUsed) {
-        if_conflict := true.B
-      }.otherwise {
-        io.flash.mode := if_mode
-        io.flash.addr := if_addr
-        if_.rdata := io.flash.rdata
-        if_.ok := io.flash.ok
+        memWait := waitSerial
+        mem.ok := false.B
       }
     }
-    // Otherwise: NullDev, ok = 1
   }
 
-  when(if_status =/= sWait) {
-    if_.ok := false.B
+  // Handle IF only when MEM is none
+  when(ifWait === waitNone && memWait === waitNone && mem.mode === RAMMode.NOP) {
+    when(if_.addr.atRAM) {
+      bindInput(if_, io.ram)
+      ifWait := waitRAM     // Readonly, always wait
+      if_.ok := false.B
+    }.elsewhen(if_.addr.atFlash) {
+      bindInput(if_, io.flash)
+      ifWait := waitFlash
+      if_.ok := false.B
+    }
   }
 }
 

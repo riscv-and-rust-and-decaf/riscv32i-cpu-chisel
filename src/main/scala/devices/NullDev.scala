@@ -6,6 +6,6 @@ import core_._
 class NullDev() extends Module {
   val io = IO(Flipped(new RAMOp))
 
-  io.ok := true.B
+  io.ok := false.B
   io.rdata := 0.U
 }
