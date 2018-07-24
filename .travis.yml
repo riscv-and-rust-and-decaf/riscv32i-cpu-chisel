@@ -2,11 +2,15 @@ language: scala
 scala:
         - 2.11.6
 
+addons:
+  apt:
+    packages:
+    - build-essential
+
 install:
-        - wget https://hereiszyn.com/tools/riscv32-unknown-elf-objcopy
-        - chmod +x riscv32-unknown-elf-objcopy
-        - wget https://hereiszyn.com/tools/riscv32-unknown-elf-as
-        - chmod +x riscv32-unknown-elf-as
+    - wget https://github.com/PkmX/riscv-prebuilt-toolchains/releases/download/20180111/riscv32-unknown-elf-toolchain.tar.gz
+    - tar xf riscv32-unknown-elf-toolchain.tar.gz
+    - export PATH=$PATH:$PWD/riscv32-unknown-elf/bin
 
 script:
         - make -C test_asm

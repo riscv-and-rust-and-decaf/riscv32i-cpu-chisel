@@ -32,6 +32,7 @@ class ID extends Module {
   val d = io.debug
 
   val inst = RegInit(Const.NOP_INST)
+  val pc = RegInit(0.U(32.W))
   // If ID is stalling, the current instruction is not executed in this cycle.
   //    (i.e. current instruction is `flushed')
   // Therefore, on the next cycle, ID must execute the same instruction.
@@ -39,11 +40,9 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
   when (io.iff.ready) {
+    pc := io.iff.pc
     inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
   }
-
-  val pc = RegInit(0.U(32.W))
-  pc := io.iff.pc
 
   d.pc := pc
 

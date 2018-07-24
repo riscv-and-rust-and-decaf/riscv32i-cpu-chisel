@@ -8,7 +8,7 @@ import devices._
   After reset, tester should first set `ready` to false,
   and load init data to RAM through `ram_init`.
  */
-class CoreTestModule extends Module {
+class CoreTestModule(printCycleNo: Boolean = true) extends Module {
   val io = IO(new Bundle {
     val ready    = Input(Bool())
     val ram_init = Flipped(new RAMOp())
@@ -24,7 +24,7 @@ class CoreTestModule extends Module {
 
   val cycle = RegInit(0.U(32.W))
   when(io.ready) {
-    printf(p"Cycle $cycle\n")
+    if (printCycleNo) printf(p"Cycle $cycle\n")
     cycle := cycle + 1.U
   }
 
@@ -229,6 +229,7 @@ class CoreTester extends ChiselFlatSpec {
 //    } should be (true)
 //  }
 }
+
 class CoreCSRTester extends ChiselFlatSpec {
   val args = Array[String]()
   "Core simple csr test" should "pass test" in {
