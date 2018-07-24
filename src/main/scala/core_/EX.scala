@@ -23,8 +23,10 @@ class EX extends Module {
   
   val excepEn = RegInit(false.B)
   val excepCode = RegInit(0.U(32.W))
-  excepEn := io.idExcep.en
+  val excepPc = RegInit(0.U(32.W))
+  excepEn   := io.idExcep.en
   excepCode := io.idExcep.code
+  excepPc   := io.idExcep.pc 
 
   val flush = io.csrExcepEn
 
@@ -93,6 +95,7 @@ class EX extends Module {
 
   io.excep.en   := excepEn
   io.excep.code := excepCode
+  io.excep.pc   := excepPc
   
   when(flush) {
     opt := OptCode.ADD

@@ -23,8 +23,10 @@ class MEM extends Module {
   
   val excepEn = RegInit(false.B)
   val excepCode = RegInit(0.U(32.W))
-  excepEn := io.exExcep.en
+  val excepPc  = RegInit(0.U(32.W))
+  excepEn   := io.exExcep.en
   excepCode := io.exExcep.code
+  excepPc   := io.exExcep.pc
 
   val opt = RegInit(OptCode.ADD)
   opt := io.ex.opt
@@ -86,4 +88,5 @@ class MEM extends Module {
   }
   io.excep.en   := excepEn
   io.excep.code := excepCode
+  io.excep.pc   := excepPc
 }

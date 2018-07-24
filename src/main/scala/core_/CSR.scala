@@ -109,8 +109,7 @@ class CSR extends Module {
   excep := io.memExcep.en
 
   when(io.memExcep.en) {
-    //TODO:fix bug, add pc field
-    //mepc   := io.memExcep.pc
+    mepc   := io.memExcep.pc
     mcause := Mux(io.memExcep.code === 8.U,
       io.memExcep.code + prv, 
       io.memExcep.code)

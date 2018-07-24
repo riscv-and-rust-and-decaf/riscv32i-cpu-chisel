@@ -92,4 +92,5 @@ class ID_CSR extends Bundle {
 class ExcepStatus extends Bundle {
   val en   = Output(Bool())
   val code = Output(UInt(32.W))
+  val pc   = Output(UInt(32.W))
 }

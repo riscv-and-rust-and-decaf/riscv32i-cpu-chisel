@@ -21,6 +21,7 @@ class IF extends Module {
 
   // pc bookkeeping
   val pc  = RegInit(Const.PC_INIT)
+  io.excep.pc := pc
   val nextPC = PriorityMux(Seq(
     (io.csrExcepEn,   io.csrExcepPc),
     (io.id.if_branch, io.id.branch_tar),  // even if stalled, acknowledge branch
