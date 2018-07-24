@@ -45,7 +45,7 @@ class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
 }
 
 class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(10)
+  step(10)  // CPI=2, Skip 5 insts
   expect(c.d.reg(1), 20)
 
   step(10)
@@ -80,27 +80,27 @@ class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fn
 
 
 class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(4) // pipeline entry
+  step(5) // pipeline entry: IF2 + ID1 + EX1 + MEM1 = 5
   expect(c.d.reg(1), 20)
-  step(1)
+  step(2)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
-  step(1)
+  step(2)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
-  step(1)
+  step(2)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
   expect(c.d.reg(4), "h_ffff_ffff".U)
-  step(1)
+  step(2)
   expect(c.d.reg(1), 20)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
   expect(c.d.reg(4), "h_ffff_ffff".U)
   expect(c.d.reg(5), "h_ffff_fff5".U)
-  step(1)
+  step(2)
   expect(c.d.reg(1), "h_ffff_fff5".U)
   expect(c.d.reg(2), 30)
   expect(c.d.reg(3), 10)
@@ -206,11 +206,11 @@ class CoreTester extends ChiselFlatSpec {
       c => new CoreTestWithoutFw(c, "test_asm/test2.bin")
     } should be(true)
   }
-//  "Core module fwyes" should "pass test" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new CoreTestWithFw(c, "test_asm/test3.bin")
-//    } should be(true)
-//  }
+  "Core module fwyes" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new CoreTestWithFw(c, "test_asm/test3.bin")
+    } should be(true)
+  }
 //  "Core test 1+2+..10" should "eq to 55" in {
 //    iotesters.Driver.execute(args, () => new CoreTestModule()) {
 //      c => new NaiveInstTest(c, "test_asm/test4.bin")
