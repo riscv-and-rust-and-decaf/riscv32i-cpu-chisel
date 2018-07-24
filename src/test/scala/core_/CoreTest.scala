@@ -130,30 +130,32 @@ class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname)
 }
 
 class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(4)
-  expect(c.d.ifpc, 16)
-  expect(c.d.reg(1), "h_87654000".U)
-  step(1)
-  expect(c.d.ifpc, 20)
-  expect(c.d.reg(1), "h_87654000".U)
-  expect(c.d.reg(2), "h_1".U)
-  step(1)
-  expect(c.d.ifpc, 24) // now the fourth inst (store) is in MEM
-  expect(c.d.reg(1), "h_87654321".U)
-  expect(c.d.reg(2), "h_1".U)
-  step(1)
-  expect(c.d.ifpc, 24) // not advancing because of the store inst
-  expect(c.d.reg(1), "h_87654321".U)
-  expect(c.d.reg(2), "h_1".U)
-  step(1)
-  expect(c.d.ifpc, 24) // not advancing because of the load inst
-  expect(c.d.reg(1), "h_87654321".U)
-  expect(c.d.reg(2), "h_87654321".U)
-  step(1)
-  expect(c.d.ifpc, 28) // now advancing
-  expect(c.d.reg(1), "h_87654321".U)
-  expect(c.d.reg(2), "h_87654321".U)
-  step(1)
+//  step(4)
+//  expect(c.d.ifpc, 16)
+//  expect(c.d.reg(1), "h_87654000".U)
+//  step(1)
+//  expect(c.d.ifpc, 20)
+//  expect(c.d.reg(1), "h_87654000".U)
+//  expect(c.d.reg(2), "h_1".U)
+//  step(1)
+//  expect(c.d.ifpc, 24) // now the fourth inst (store) is in MEM
+//  expect(c.d.reg(1), "h_87654321".U)
+//  expect(c.d.reg(2), "h_1".U)
+//  step(1)
+//  expect(c.d.ifpc, 24) // not advancing because of the store inst
+//  expect(c.d.reg(1), "h_87654321".U)
+//  expect(c.d.reg(2), "h_1".U)
+//  step(1)
+//  expect(c.d.ifpc, 24) // not advancing because of the load inst
+//  expect(c.d.reg(1), "h_87654321".U)
+//  expect(c.d.reg(2), "h_87654321".U)
+//  step(1)
+//  expect(c.d.ifpc, 28) // now advancing
+//  expect(c.d.reg(1), "h_87654321".U)
+//  expect(c.d.reg(2), "h_87654321".U)
+
+  // Just check the wave ...
+  step(20)
   expect(c.d.reg(1), "h_87654321".U)
   expect(c.d.reg(2), "h_87654543".U)
 }
@@ -216,11 +218,11 @@ class CoreTester extends ChiselFlatSpec {
 //      c => new NaiveInstTest(c, "test_asm/test4.bin")
 //    } should be(true)
 //  }
-//  "Core test simple load/store" should "pass test" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
-//    } should be (true)
-//  }
+  "Core test simple load/store" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
+    } should be (true)
+  }
 //  "Core test 6" should "pass test" in {
 //    iotesters.Driver.execute(args, () => new CoreTestModule()) {
 //      c => new CoreTest6(c, "test_asm/test6.bin")
@@ -236,3 +238,7 @@ class CoreCSRTester extends ChiselFlatSpec {
   }
 }
 
+// runMain core_.Repl
+object Repl extends App {
+  iotesters.Driver.executeFirrtlRepl(args, () => new CoreTestModule)
+}

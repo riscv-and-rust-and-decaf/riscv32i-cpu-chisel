@@ -13,16 +13,22 @@ class MEM extends Module {
   })
 
   // Lock input
-  val ramOp       = RegNext(io.ex.ramOp,        init = 0.U.asTypeOf(new RAMOp_Output))
-  val wregAddr    = RegNext(io.ex.wrRegOp.addr, init = 0.U(32.W))
-  val exWrRegData = RegNext(io.ex.wrRegOp.data, init = 0.U(32.W))
+  val ramOp       = RegInit(0.U.asTypeOf(new RAMOp_Output))
+  val wregAddr    = RegInit(0.U(32.W))
+  val exWrRegData = RegInit(0.U(32.W))
+
+  // Stall
+  val stall = ramOp.mode =/= RAMMode.NOP && !io.mmu.ok
+
+  when(!stall) {
+    ramOp := io.ex.ramOp
+    wregAddr := io.ex.wrRegOp.addr
+    exWrRegData := io.ex.wrRegOp.data
+  }
 
   io.mmu.addr  := ramOp.addr
   io.mmu.wdata := ramOp.wdata
   io.mmu.mode  := ramOp.mode
-
-  // Stall
-  val stall = ramOp.mode =/= RAMMode.NOP && !io.mmu.ok
 
   // Output
   io.wrRegOp.addr := Mux(stall, 0.U, wregAddr)

@@ -25,6 +25,8 @@ class MMU extends Module {
     from.ok := false.B
     when(ready && from.mode =/= RAMMode.NOP) {
       // We have no cache now, so send to IO and wait a cycle
+//      from.ok := RAMMode.isWrite(from.mode)
+//      ready := RAMMode.isWrite(from.mode)
       ready := false.B
     }.elsewhen(!ready) {
       // Get IO result. Wait until IO ok.

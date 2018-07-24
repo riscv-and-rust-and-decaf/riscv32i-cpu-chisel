@@ -2,6 +2,7 @@ package devices
 
 import core_._
 import chisel3._
+import chisel3.util._
 
 object MemoryRegionExt {
   val RAM_BEGIN = 0x00000000L.U(32.W)
@@ -18,7 +19,18 @@ object MemoryRegionExt {
   }
 }
 
-/// Do IO with a given physical address for Core
+/*
+ Do IO with a given physical address for Core
+
+ Assume:
+ - IF will never write.
+ - IF will never read serial.
+
+ Guarantee:
+ - Write op from MEM will OK after 1 cycle.
+
+ TODO: Optimize and rewrite
+  */
 class IOManager extends Module {
   val io = IO(new Bundle {
     val core = Flipped(new Core_IO)
@@ -46,13 +58,6 @@ class IOManager extends Module {
     io.mode := 0.U
     io.wdata := 0.U
   })
-  // Connect to here if the target device is being used
-  val wait_device = Module(new Module {
-    val io = IO(Flipped(new RAMOp))
-    io.ok := false.B
-    io.rdata := 0.U
-  })
-  wait_device.io <> null_user.io
 
   // Connect to null for all by default
   io.ram <> null_user.io
@@ -75,21 +80,65 @@ class IOManager extends Module {
   private val ramUsed    = mem.mode =/= RAMMode.NOP && mem.addr.atRAM
   private val flashUsed  = mem.mode =/= RAMMode.NOP && mem.addr.atFlash
 
-  // Route for IF
-  when(if_.mode =/= RAMMode.NOP) {
-    when(if_.addr.atRAM) {
-      when(ramUsed) {
-        if_ <> wait_device.io
-      }.otherwise {
-        if_ <> io.ram
-      }
-    }.elsewhen(if_.addr.atFlash) {
-      when(flashUsed) {
-        if_ <> wait_device.io
-      }.otherwise {
-        if_ <> io.flash
+  // IF status
+  val sReady :: sRetry :: sWait :: Nil = Enum(3)
+  val if_status                        = RegInit(sReady)
+  val if_lock_addr                     = RegInit(0.U)
+  val if_lock_mode                     = RegInit(0.U)
+  val if_conflict                      = Wire(Bool())
+  if_conflict := false.B  // test later
+
+  // Status => Next status
+  switch(if_status) {
+    is(sReady) {
+      if_status := PriorityMux(Seq(
+        (if_.mode === RAMMode.NOP, sReady),
+        (if_conflict, sRetry),
+        (true.B, sWait)
+      ))
+      when(if_.mode =/= RAMMode.NOP) {
+        if_lock_addr := if_.addr
+        if_lock_mode := if_.mode
       }
     }
+    is(sRetry) {
+      if_status := Mux(if_conflict, sRetry, sWait)
+    }
+    is(sWait) {
+      if_status := Mux(if_.ok, sReady, sWait)
+    }
+  }
+
+  // IF Status => IF op this cycle
+  val if_mode = Mux(if_status === sReady, if_.mode, if_lock_mode)
+  val if_addr = Mux(if_status === sReady, if_.addr, if_lock_addr)
+
+  // Route for IF. Test if conflict.
+  when(if_mode =/= RAMMode.NOP) {
+    when(if_addr.atRAM) {
+      when(ramUsed) {
+        if_conflict := true.B
+      }.otherwise {
+        io.ram.mode := if_mode
+        io.ram.addr := if_addr
+        if_.rdata := io.ram.rdata
+        if_.ok := io.ram.ok
+      }
+    }.elsewhen(if_addr.atFlash) {
+      when(flashUsed) {
+        if_conflict := true.B
+      }.otherwise {
+        io.flash.mode := if_mode
+        io.flash.addr := if_addr
+        if_.rdata := io.flash.rdata
+        if_.ok := io.flash.ok
+      }
+    }
+    // Otherwise: NullDev, ok = 1
+  }
+
+  when(if_status =/= sWait) {
+    if_.ok := false.B
   }
 }
 
