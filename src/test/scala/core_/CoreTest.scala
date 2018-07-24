@@ -194,7 +194,7 @@ class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
 }
 
 class CSRInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(15)
+  step(17)
   expect(c.d.reg(2), 13)
   expect(c.d.reg(3), 11)
   expect(c.d.reg(4), 8)
@@ -231,7 +231,7 @@ class CoreTester extends ChiselFlatSpec {
 }
 
 class CoreCSRTester extends ChiselFlatSpec {
-  val args = Array[String]()
+  val args = Array[String]("-fiwv")
   "Core simple csr test" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new CSRInstTest(c, "test_asm/test_csr.bin")
