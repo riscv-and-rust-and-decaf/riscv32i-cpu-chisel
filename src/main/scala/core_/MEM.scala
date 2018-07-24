@@ -39,21 +39,10 @@ class MEM extends Module {
 
   //------------------- CSR ----------------------
 
-  val wCSRAddr  = RegInit(0.U(12.W))
-  val csrMode   = RegInit(0.U(2.W))
-  val csrOldVal = RegInit(0.U(32.W))
-  val csrRsVal  = RegInit(0.U(32.W))
-  val csrNewVal = RegInit(0.U(32.W))
+  val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
+  when(!stall) {
+    wrCSROp := io.ex.wrCSROp
+  }
 
-  wCSRAddr  := io.ex.wrCSROp.addr
-  csrMode   := io.ex.wrCSROp.mode
-  csrOldVal := io.ex.wrCSROp.oldVal
-  csrRsVal  := io.ex.wrCSROp.rsVal
-  csrNewVal := io.ex.wrCSROp.newVal
-  
-  io.wrCSROp.addr   := wCSRAddr
-  io.wrCSROp.oldVal := csrOldVal
-  io.wrCSROp.rsVal  := csrRsVal
-  io.wrCSROp.mode   := csrMode
-  io.wrCSROp.newVal := csrNewVal
+  io.wrCSROp := wrCSROp
 }

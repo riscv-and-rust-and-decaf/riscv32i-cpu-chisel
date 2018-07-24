@@ -63,26 +63,14 @@ class EX extends Module {
 
   //------------------- CSR ----------------------
 
-  val wCSRAddr  = RegInit(0.U(12.W))
-  val csrMode   = RegInit(0.U(2.W))
-  val csrOldVal = RegInit(0.U(32.W))
-  val csrRsVal  = RegInit(0.U(32.W))
-  val csrNewVal = RegInit(0.U(32.W))
+  val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
+  wrCSROp := io.id.wrCSROp
 
-  wCSRAddr  := io.id.wrCSROp.addr
-  csrMode   := io.id.wrCSROp.mode
-  csrOldVal := io.id.wrCSROp.oldVal
-  csrRsVal  := io.id.wrCSROp.rsVal
-  csrNewVal := io.id.wrCSROp.newVal
-  
-  io.mem.wrCSROp.addr   := wCSRAddr
-  io.mem.wrCSROp.oldVal := csrOldVal
-  io.mem.wrCSROp.rsVal  := csrRsVal
-  io.mem.wrCSROp.mode   := csrMode
-  io.mem.wrCSROp.newVal := MuxLookup(csrMode, 0.U, Seq(
-    CSRMODE.RW -> csrRsVal,
-    CSRMODE.RS -> (csrOldVal | csrRsVal),
-    CSRMODE.RC -> (csrOldVal & ~csrRsVal)
+  io.mem.wrCSROp := wrCSROp
+  io.mem.wrCSROp.newVal := MuxLookup(wrCSROp.mode, 0.U, Seq(
+    CSRMODE.RW -> wrCSROp.rsVal,
+    CSRMODE.RS -> (wrCSROp.oldVal | wrCSROp.rsVal),
+    CSRMODE.RC -> (wrCSROp.oldVal & ~wrCSROp.rsVal)
   ))
 
 
