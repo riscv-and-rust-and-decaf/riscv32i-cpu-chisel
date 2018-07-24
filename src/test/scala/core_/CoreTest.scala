@@ -8,7 +8,7 @@ import devices._
   After reset, tester should first set `ready` to false,
   and load init data to RAM through `ram_init`.
  */
-class CoreTestModule(printCycleNo: Boolean = true) extends Module {
+class CoreTestModule(trace: Boolean = true) extends Module {
   val io = IO(new Bundle {
     val ready    = Input(Bool())
     val ram_init = Flipped(new RAMOp())
@@ -18,13 +18,13 @@ class CoreTestModule(printCycleNo: Boolean = true) extends Module {
 
   val core   = Module(new Core())
   val ioCtrl = Module(new IOManager())
-  val ram    = Module(new MockRam())
+  val ram    = Module(new MockRam(trace))
   val flash  = Module(new NullDev())
-  val serial = Module(new MockSerial())
+  val serial = Module(new MockSerial(trace))
 
   val cycle = RegInit(0.U(32.W))
   when(io.ready) {
-    if (printCycleNo) printf(p"Cycle $cycle\n")
+    if (trace) printf(p"Cycle $cycle\n")
     cycle := cycle + 1.U
   }
 
@@ -240,6 +240,17 @@ class CoreCSRTester extends ChiselFlatSpec {
     } should be (true)
   }
 }
+
+//class CoreAsmTester extends ChiselFlatSpec {
+//  val args = Array[String]("-fiwv")
+//  "Run hello" should "pass test" in {
+//    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
+//      c => new CoreTest(c, "monitor.bin") {
+//        step(100000)
+//      }
+//    } should be (true)
+//  }
+//}
 
 // runMain core_.Repl
 object Repl extends App {
