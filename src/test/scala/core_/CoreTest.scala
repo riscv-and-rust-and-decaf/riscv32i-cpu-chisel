@@ -109,19 +109,21 @@ class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname
 }
 
 class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(4)
-  expect(c.d.ifpc, 16)
-  expect(c.d.reg(10), 10)
-  step(1)
-  expect(c.d.ifpc, 20)
-  expect(c.d.ifinst, "h_fea09ce3".U)
-  step(1)
-  expect(c.d.id.pc, 20)
-  expect(c.d.id.imm, -8)
-  expect(c.d.id_branch, 12)
-  step(45)
+//  step(4)
+//  expect(c.d.ifpc, 16)
+//  expect(c.d.reg(10), 10)
+//  step(1)
+//  expect(c.d.ifpc, 20)
+//  expect(c.d.ifinst, "h_fea09ce3".U)
+//  step(1)
+//  expect(c.d.id.pc, 20)
+//  expect(c.d.id.imm, -8)
+//  expect(c.d.id_branch, 12)
+
+  // Just check the result
+  step(90)
   expect(c.d.reg(7), 55)
-  step(1000)
+  step(200)
   expect(c.d.reg(4), 1000)
   expect(c.d.reg(5), 1597)
   expect(c.d.reg(6), 987)
@@ -154,7 +156,7 @@ class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fn
 //  expect(c.d.reg(1), "h_87654321".U)
 //  expect(c.d.reg(2), "h_87654321".U)
 
-  // Just check the wave ...
+  // Just check the result
   step(20)
   expect(c.d.reg(1), "h_87654321".U)
   expect(c.d.reg(2), "h_87654543".U)
@@ -213,11 +215,11 @@ class CoreTester extends ChiselFlatSpec {
       c => new CoreTestWithFw(c, "test_asm/test3.bin")
     } should be(true)
   }
-//  "Core test 1+2+..10" should "eq to 55" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new NaiveInstTest(c, "test_asm/test4.bin")
-//    } should be(true)
-//  }
+  "Core test 1+2+..10" should "eq to 55" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new NaiveInstTest(c, "test_asm/test4.bin")
+    } should be(true)
+  }
   "Core test simple load/store" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new LoadStoreInstTest(c, "test_asm/test5.bin")

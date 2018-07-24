@@ -12,21 +12,31 @@ class IF extends Module {
 
   val stall = !io.mmu.ok || !io.id.ready
 
-  // pc bookkeeping
-  val pc  = RegInit(Const.PC_INIT)
+  val pc      = RegInit(Const.PC_INIT)
+  val branch  = RegInit(0.U.asTypeOf(Valid(UInt(32.W))))
 
-  val nextPC = PriorityMux(Seq(
-    (io.id.branch.valid, io.id.branch.bits),  // even if stalled, acknowledge branch
-    (stall,              pc),                // when stalled, don't advance
-    (true.B,             pc + 4.U)))
-  pc := nextPC
+  // Log branch
+  when(io.id.branch.valid) {
+    branch := io.id.branch
+  }
+
+  // Change status only when mmu.ok
+  when(!stall) {
+    pc := Mux(branch.valid, branch.bits, pc + 4.U)
+    branch := 0.U.asTypeOf(Valid(UInt(32.W))) // Clear branch log
+  }
 
   // instruction fetch
   io.mmu.addr  := pc; // fetch current instruction
   io.mmu.mode  := RAMMode.LW
   io.mmu.wdata := 0.U
 
-  // feed to ID
-  io.id.pc   := pc
-  io.id.inst := Mux(stall, Const.NOP_INST, io.mmu.rdata)
+  // Feed to ID: valid only when no stall && no branch
+  when(stall || branch.valid) {
+    io.id.pc   := 0.U
+    io.id.inst := Const.NOP_INST
+  }.otherwise {
+    io.id.pc   := pc
+    io.id.inst := io.mmu.rdata
+  }
 }
