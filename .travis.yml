@@ -2,11 +2,18 @@ language: scala
 scala:
         - 2.11.6
 
+addons:
+  apt:
+    packages:
+    - build-essential
+
 install:
         - wget https://hereiszyn.com/tools/riscv32-unknown-elf-objcopy
         - chmod +x riscv32-unknown-elf-objcopy
         - wget https://hereiszyn.com/tools/riscv32-unknown-elf-as
         - chmod +x riscv32-unknown-elf-as
+        - wget https://hereiszyn.com/tools/riscv32-unknown-elf-gcc
+        - chmod +x riscv32-unknown-elf-gcc
 
 script:
         - make -C test_asm
