@@ -18,16 +18,13 @@ class MMU extends Module {
 
     val from = io.from
     val to = io.to
-    to.mode := 0.U
-    to.wdata := 0.U
-    to.addr := 0.U
+    to.mode := from.mode
+    to.wdata := from.wdata
+    to.addr := from.addr
     from.rdata := to.rdata
     from.ok := false.B
     when(ready && from.mode =/= RAMMode.NOP) {
       // We have no cache now, so send to IO and wait a cycle
-      to.mode := from.mode
-      to.wdata := from.wdata
-      to.addr := from.addr
       ready := false.B
     }.elsewhen(!ready) {
       // Get IO result. Wait until IO ok.

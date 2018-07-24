@@ -74,7 +74,6 @@ class IOManager extends Module {
 
   private val ramUsed    = mem.mode =/= RAMMode.NOP && mem.addr.atRAM
   private val flashUsed  = mem.mode =/= RAMMode.NOP && mem.addr.atFlash
-  private val serialUsed = mem.mode =/= RAMMode.NOP && mem.addr.atSerial
 
   // Route for IF
   when(if_.mode =/= RAMMode.NOP) {
@@ -89,12 +88,6 @@ class IOManager extends Module {
         if_ <> wait_device.io
       }.otherwise {
         if_ <> io.flash
-      }
-    }.elsewhen(if_.addr.atSerial) {
-      when(serialUsed) {
-        if_ <> wait_device.io
-      }.otherwise {
-        if_ <> io.serial
       }
     }
   }

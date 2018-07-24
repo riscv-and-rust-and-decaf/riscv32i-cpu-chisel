@@ -12,24 +12,24 @@ class MEM extends Module {
     val wrCSROp   = new WrCSROp
   })
 
-  // Stall
-  io.ex.ready := io.mmu.ok
-
   // Lock input
   val ramOp       = RegNext(io.ex.ramOp,        init = 0.U.asTypeOf(new RAMOp_Output))
   val wregAddr    = RegNext(io.ex.wrRegOp.addr, init = 0.U(32.W))
   val exWrRegData = RegNext(io.ex.wrRegOp.data, init = 0.U(32.W))
 
-  val isLoad    = RAMMode.isRead(ramOp.mode)
-  val wregData  = Mux(isLoad, io.mmu.rdata, exWrRegData)
-
   io.mmu.addr  := ramOp.addr
   io.mmu.wdata := ramOp.wdata
   io.mmu.mode  := ramOp.mode
 
-  io.wrRegOp.addr := wregAddr
+  // Stall
+  val stall = ramOp.mode =/= RAMMode.NOP && !io.mmu.ok
+
+  // Output
+  io.wrRegOp.addr := Mux(stall, 0.U, wregAddr)
   io.wrRegOp.rdy  := true.B
-  io.wrRegOp.data := wregData
+  io.wrRegOp.data := Mux(RAMMode.isRead(ramOp.mode), io.mmu.rdata, exWrRegData)
+
+  io.ex.ready := !stall
 
   //------------------- CSR ----------------------
 
