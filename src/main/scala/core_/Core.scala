@@ -31,14 +31,12 @@ class Core extends Module {
   id.io.ex         <> ex.io.id
   id.io.reg        <> reg.io.id
   id.io.csr        <> csr.io.id 
-  id.io.exWrRegOp  <> ex.io.wrRegOp
+  id.io.exWrRegOp  <> ex.io.mem.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
-  id.io.exWrCSROp  <> ex.io.wrCSROp
+  id.io.exWrCSROp  <> ex.io.mem.wrCSROp
   id.io.memWrCSROp <> mem.io.wrCSROp
 
   ex.io.mem     <> mem.io.ex
-  ex.io.wrRegOp <> mem.io.exWrRegOp
-  ex.io.wrCSROp <> mem.io.exWrCSROp
 
   mem.io.mmu     <> mmu.io.mem
   mem.io.wrRegOp <> reg.io.mem

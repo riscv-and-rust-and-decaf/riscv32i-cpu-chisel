@@ -8,8 +8,6 @@ class EX extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_EX)
     val mem = new EX_MEM
-    val wrRegOp = new WrRegOp
-    val wrCSROp = new WrCSROp
   })
 
   // Stall
@@ -41,20 +39,27 @@ class EX extends Module {
       // not necessary, all rest (a+b)
     )
   )
-  io.mem.alu_out := aluRes
 
-  //------------------- Reg ----------------------
+  //-------------- Reg & Ram Op ------------------
 
   // Lock input
   val wregAddr = RegNext(io.id.wrRegOp.addr, init=0.U(5.W))
   val store_data = RegNext(io.id.store_data, init=0.U(32.W))
 
-  io.wrRegOp.addr := wregAddr
-  io.wrRegOp.data := aluRes
-  io.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
+  io.mem.wrRegOp.addr := wregAddr
+  io.mem.wrRegOp.data := aluRes
+  io.mem.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
 
-  io.mem.opt       := opt
-  io.mem.store_data := store_data
+  io.mem.ramOp.addr := aluRes
+  io.mem.ramOp.mode := MuxLookup(opt, RAMMode.NOP, Seq(
+    OptCode.LW  -> RAMMode.LW,
+    OptCode.SW  -> RAMMode.SW,
+    OptCode.LB  -> RAMMode.LB,
+    OptCode.LBU -> RAMMode.LBU,
+    OptCode.SB  -> RAMMode.SB,
+    OptCode.LH  -> RAMMode.LH,
+    OptCode.LHU -> RAMMode.LHU))
+  io.mem.ramOp.wdata := store_data
 
   //------------------- CSR ----------------------
 
@@ -70,11 +75,11 @@ class EX extends Module {
   csrRsVal  := io.id.wrCSROp.rsVal
   csrNewVal := io.id.wrCSROp.newVal
   
-  io.wrCSROp.addr   := wCSRAddr
-  io.wrCSROp.oldVal := csrOldVal
-  io.wrCSROp.rsVal  := csrRsVal
-  io.wrCSROp.mode   := csrMode
-  io.wrCSROp.newVal := MuxLookup(csrMode, 0.U, Seq(
+  io.mem.wrCSROp.addr   := wCSRAddr
+  io.mem.wrCSROp.oldVal := csrOldVal
+  io.mem.wrCSROp.rsVal  := csrRsVal
+  io.mem.wrCSROp.mode   := csrMode
+  io.mem.wrCSROp.newVal := MuxLookup(csrMode, 0.U, Seq(
     CSRMODE.RW -> csrRsVal,
     CSRMODE.RS -> (csrOldVal | csrRsVal),
     CSRMODE.RC -> (csrOldVal & ~csrRsVal)

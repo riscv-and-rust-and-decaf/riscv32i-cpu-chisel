@@ -125,7 +125,7 @@ class ID extends Module {
     instTypesUsingRs1.map(x => x === instType).reduce(_ || _)
   val rs2Hazard = (rs2Addr === exWrRegOp.addr) && 
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
-  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard)
+  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
 
   when (stall) {
     // flush current instruction

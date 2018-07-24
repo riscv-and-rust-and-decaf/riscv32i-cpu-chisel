@@ -41,11 +41,14 @@ class WrCSROp extends Bundle {
 }
 
 // represents an operation of "ram access"
-class RAMOp extends Bundle {
+class RAMOp_Output extends Bundle {
   val addr  = Output(UInt(32.W))
   val mode  = Output(UInt(4.W))   // Consts.scalaRAMMode.XX
   val wdata = Output(UInt(32.W))
+}
 
+// Full IO interface
+class RAMOp extends RAMOp_Output {
   val rdata = Input(UInt(32.W))
   val ok    = Input(Bool())
 }
@@ -82,9 +85,9 @@ class ID_EX extends ID_EX_Output {
 }
 
 class EX_MEM extends Bundle {
-  val alu_out = Output(UInt(32.W))
-  val opt     = Output(UInt(5.W))
-  var store_data = Output(UInt(32.W)) // for Store Inst only
+  val ramOp   = new RAMOp_Output
+  val wrRegOp = Output(new WrRegOp)
+  val wrCSROp = Output(new WrCSROp)
   var ready   = Input(Bool())
 }
 
