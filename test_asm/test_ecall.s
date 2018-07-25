@@ -17,6 +17,8 @@ reset_vector:
 	li x1, 9        
 	li x1, 8        
 	li x1, 7
+	li x1,6
+	li x1,5
 
 wtf:
 	li x2, 2
@@ -31,8 +33,8 @@ end1:
 end:
 	csrr x20, mcause
 	beq x11, x20, end1
-	li x1, 6
-	li x1,5
+	li x1, 4
+	li x1,3
 	nop
 	nop
 	nop

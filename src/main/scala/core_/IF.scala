@@ -25,13 +25,18 @@ class IF extends Module {
   io.excep.pc := pc
 
   // Log branch
-  when(io.id.branch.valid) {
+  when(io.csrExcepEn) {
+    branch.valid := true.B
+    branch.bits := io.csrExcepPc
+  }
+  .elsewhen(io.id.branch.valid) {
     branch := io.id.branch
   }
 
   // Change status only when mmu.ok
   when(!stall) {
     pc := PriorityMux(Seq(
+      (io.csrExcepEn,       io.csrExcepPc),
       (io.id.branch.valid,  io.id.branch.bits),
       (branch.valid,        branch.bits),
       (true.B,              pc + 4.U)))

@@ -104,6 +104,7 @@ class CSR extends Module {
   }
 
   val pc = Wire(UInt(32.W))
+  //val excep = Wire(Bool())
   val excep = RegInit(false.B)
 
   excep := io.memExcep.en

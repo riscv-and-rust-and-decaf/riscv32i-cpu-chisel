@@ -45,6 +45,10 @@ class ID extends Module {
   excepPc   := io.ifExcep.pc
 
 
+  io.excep.en   := excepEn
+  io.excep.code := excepCode
+  io.excep.pc   := excepPc
+  
   val flush = io.csrExcepEn
 
   val d = io.debug
@@ -232,22 +236,19 @@ class ID extends Module {
         .otherwise {
           //TODO:  EBREAK
           when(!excepEn) {
-            excepEn := true.B
-            excepCode := 8.U
+            io.excep.en := true.B
+            io.excep.code := 8.U
           }
         }
 
       }
       is(InstType.BAD) {
         when(!excepEn) {
-          excepEn := true.B
-          excepCode := 2.U
+          io.excep.en := true.B
+          io.excep.code := 2.U
         }
       }
     }
   }
 
-  io.excep.en   := excepEn
-  io.excep.code := excepCode
-  io.excep.pc   := excepPc
 }

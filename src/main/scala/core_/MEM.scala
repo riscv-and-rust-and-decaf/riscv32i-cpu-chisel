@@ -56,34 +56,25 @@ class MEM extends Module {
   when(!stall) {
     wrCSROp := io.ex.wrCSROp
   }
+  io.wrCSROp := wrCSROp
 
-/*
-  wCSRAddr  := io.exWrCSROp.addr
-  csrMode   := io.exWrCSROp.mode
-  csrOldVal := io.exWrCSROp.oldVal
-  csrRsVal  := io.exWrCSROp.rsVal
-  csrNewVal := io.exWrCSROp.newVal
-  
-  io.wrCSROp.addr   := wCSRAddr
-  io.wrCSROp.oldVal := csrOldVal
-  io.wrCSROp.rsVal  := csrRsVal
-  io.wrCSROp.mode   := csrMode
-  io.wrCSROp.newVal := csrNewVal
-*/
   when(io.csrExcepEn) {
     excepEn := false.B
-  }
-  when(excepEn || io.csrExcepEn) {
     wregAddr := 0.U
-    wrCSROp.mode := 0.U
-    //csrMode := 0.U
-    io.mmu.mode := RAMMode.NOP // TODO: change Reg opt instead of mmu.mode
-    printf("! Exception [%d] Pc: 0x%x Excep: %d\n", wregAddr, excepPc, excepEn);
+    wrCSROp.mode := CSRMODE.NOP
+    ramOp.mode := RAMMode.NOP 
+    printf("! exception come, flushed (0x%x)\n", excepPc);
   }
-  printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
+  when(excepEn) {
+    io.wrRegOp.addr := 0.U
+    io.wrCSROp.mode := CSRMODE.NOP
+    io.mmu.mode := RAMMode.NOP
+    printf("! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn);
+  }
+
+  //printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc
 
-  io.wrCSROp := wrCSROp
 }
