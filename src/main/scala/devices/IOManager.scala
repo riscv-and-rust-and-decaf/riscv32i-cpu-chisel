@@ -5,12 +5,12 @@ import chisel3._
 import chisel3.util._
 
 object MemoryRegionExt {
-  val RAM_BEGIN = 0x00000000L.U(32.W)
-  val RAM_END = 0x00400000L.U(32.W)
-  val FLASH_BEGIN = 0x00800000L.U(32.W)
-  val FLASH_END = 0x01000000L.U(32.W)
+  val RAM_BEGIN    = 0x80000000L.U(32.W)
+  val RAM_END      = 0x80400000L.U(32.W)
+  val FLASH_BEGIN  = 0x00800000L.U(32.W)
+  val FLASH_END    = 0x01000000L.U(32.W)
   val SERIAL_BEGIN = 0x10000000L.U(32.W)
-  val SERIAL_END = 0x10000008L.U(32.W)
+  val SERIAL_END   = 0x10000008L.U(32.W)
 
   implicit def region(addr: UInt) = new {
     def atRAM = addr >= RAM_BEGIN && addr < RAM_END

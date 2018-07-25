@@ -157,7 +157,7 @@ class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fn
 //  expect(c.d.reg(2), "h_87654321".U)
 
   // Just check the result
-  step(20)
+  step(25)
   expect(c.d.reg(1), "h_87654321".U)
   expect(c.d.reg(2), "h_87654543".U)
 }

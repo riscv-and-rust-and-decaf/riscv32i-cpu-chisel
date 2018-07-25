@@ -32,23 +32,24 @@ else
     exit 1
 fi
 
+CFLAGS="-mabi=ilp32 -march=rv32i -O2 -std=gnu99 -Wno-unused -fno-builtin -Wall -nostdinc -fno-stack-protector -ffunction-sections -fdata-sections -nostartfiles"
+
 fname=$1
 if [[ ${fname: -2} == ".c" ]]
 then
-    CFLAGS="-mabi=ilp32 -march=rv32i -O2 -std=gnu99 -Wno-unused -fno-builtin -Wall -nostdinc -fno-stack-protector -ffunction-sections -fdata-sections -nostartfiles"
-    CC_OUTPUT="${fname%.c}.o"
-    OBJCOPY_OUTPUT="${fname%.c}.bin"
-    ${CC} ${CFLAGS} $fname -o ${CC_OUTPUT} -Tlinker.ld
-    ${OBJCOPY} -O binary ${CC_OUTPUT} ${OBJCOPY_OUTPUT}
+    OBJ="${fname%.c}.o"
+    BIN="${fname%.c}.bin"
+    ${CC} ${CFLAGS} ${fname} -o ${OBJ} -Tlinker.ld
+    ${OBJCOPY} -O binary ${OBJ} ${BIN}
     exit
 fi
 
 if [[ ${fname: -2} == ".s" ]]
 then
-    AS_OUTPUT="${fname%.s}.o"
-    OBJCOPY_OUTPUT="${fname%.s}.bin"
-    ${AS} $fname -o ${AS_OUTPUT}
-    ${OBJCOPY} -O binary -j .text ${AS_OUTPUT} ${OBJCOPY_OUTPUT}
+    OBJ="${fname%.s}.o"
+    BIN="${fname%.s}.bin"
+    ${CC} ${CFLAGS} ${fname} -o ${OBJ} -Tlinker.ld
+    ${OBJCOPY} -O binary -j .text ${OBJ} ${BIN}
     exit
 fi
 
