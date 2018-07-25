@@ -62,17 +62,17 @@ class MEM extends Module {
     excepEn := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
-    ramOp.mode := RAMMode.NOP 
-    printf("! exception come, flushed (0x%x)\n", excepPc);
+    ramOp.mode := RAMMode.NOP
+    //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
   }
   when(excepEn) {
     io.wrRegOp.addr := 0.U
     io.wrCSROp.mode := CSRMODE.NOP
     io.mmu.mode := RAMMode.NOP
-    printf("! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn);
+    //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
   }
 
-  //printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
+  //printf("[MEM] Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data)
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc

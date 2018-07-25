@@ -48,7 +48,7 @@ class ID extends Module {
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc
-  
+
   val flush = io.csrExcepEn
 
   val d = io.debug
@@ -62,15 +62,15 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
 
-  pc := io.iff.pc
-
   when(flush) {
+    pc := 0.U
     inst := Const.NOP_INST
   }
   .elsewhen (io.iff.ready) {
     pc := io.iff.pc
     inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
   }
+  // otherwise stall
 
   d.pc := pc
 
