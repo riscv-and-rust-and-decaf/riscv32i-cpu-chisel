@@ -6,6 +6,7 @@ import chisel3.iotesters.{ChiselFlatSpec, Driver, PeekPokeTester}
 
 class IDTest(t: ID) extends PeekPokeTester(t) {
   reset(10)
+  poke(t.io.ex.ready, true)
   poke(t.io.exWrRegOp.addr, 0) // no forwarding
   poke(t.io.memWrRegOp.addr, 0) // no forwarding
   poke(t.io.iff.inst, "b111111111110_00001_010_00010_0010011".U)

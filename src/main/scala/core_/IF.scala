@@ -22,7 +22,10 @@ class IF extends Module {
 
   // Change status only when mmu.ok
   when(!stall) {
-    pc := Mux(branch.valid, branch.bits, pc + 4.U)
+    pc := PriorityMux(Seq(
+      (io.id.branch.valid,  io.id.branch.bits),
+      (branch.valid,        branch.bits),
+      (true.B,              pc + 4.U)))
     branch := 0.U.asTypeOf(Valid(UInt(32.W))) // Clear branch log
   }
 

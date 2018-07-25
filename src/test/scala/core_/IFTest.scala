@@ -49,10 +49,13 @@ class IFTest(t: IF) extends PeekPokeTester(t) {
   poke(t.io.id.branch.bits, 40)
   step(1)
   expect(t.io.id.pc, 40)
-  //   Branch with stall: Do branch
+  //   Branch with stall
   poke(t.io.id.branch.valid, 1)
   poke(t.io.id.branch.bits, 80)
   poke(t.io.mmu.ok, 0)
+  step(1)
+  expect(t.io.id.pc, 0)
+  poke(t.io.mmu.ok, 1)
   step(1)
   expect(t.io.id.pc, 80)
 }
