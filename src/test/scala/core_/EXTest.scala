@@ -34,7 +34,7 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
       poke(ex.io.id.oprd2, toUInt(rd2))
       poke(ex.io.id.opt, op)
       step(1)
-      expect(ex.io.mem.alu_out, toUInt(res))
+      expect(ex.io.mem.ramOp.addr, toUInt(res))
     }
   }
 

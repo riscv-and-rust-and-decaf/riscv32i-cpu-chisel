@@ -1,6 +1,7 @@
 package core_
 
 import chisel3._
+import chisel3.util.Valid
 
 /*
   Interface from Core.MMU to IOManager
@@ -22,7 +23,6 @@ import chisel3._
 class Core_IO extends Bundle {
   val if_ = new RAMOp()
   val mem = new RAMOp()
-//  val mmu = new RAMOp()
 }
 
 // repesents an operation of "writing registers", when data might not be ready
@@ -41,11 +41,14 @@ class WrCSROp extends Bundle {
 }
 
 // represents an operation of "ram access"
-class RAMOp extends Bundle {
+class RAMOp_Output extends Bundle {
   val addr  = Output(UInt(32.W))
   val mode  = Output(UInt(4.W))   // Consts.scalaRAMMode.XX
   val wdata = Output(UInt(32.W))
+}
 
+// Full IO interface
+class RAMOp extends RAMOp_Output {
   val rdata = Input(UInt(32.W))
   val ok    = Input(Bool())
 }
@@ -57,11 +60,10 @@ class RdRegOp extends Bundle {
 }
 
 class IF_ID extends Bundle {
-  val pc   = Output(UInt(32.W))
-  val inst = Output(UInt(32.W))
-  val if_branch  = Input(Bool())
-  val branch_tar = Input(UInt(32.W))
-  val id_stall = Input(Bool())
+  val pc     = Output(UInt(32.W))
+  val inst   = Output(UInt(32.W))
+  val branch = Input(Valid(UInt(32.W)))
+  val ready  = Input(Bool())
 }
 
 class ID_Reg extends Bundle {
@@ -69,19 +71,24 @@ class ID_Reg extends Bundle {
   val read2 = new RdRegOp()
 }
 
-class ID_EX extends Bundle {
-  val oprd1 = Output(UInt(32.W))
-  val oprd2 = Output(UInt(32.W))
-  val opt   = Output(UInt(5.W))
-
+class ID_EX_Output extends Bundle {
+  val oprd1      = Output(UInt(32.W))
+  val oprd2      = Output(UInt(32.W))
+  val opt        = Output(UInt(5.W))
+  val wrRegOp    = Output(new WrRegOp)
+  val wrCSROp    = Output(new WrCSROp)
   var store_data = Output(UInt(32.W)) // for Store Inst only
 }
 
-class EX_MEM extends Bundle {
-  val alu_out = Output(UInt(32.W))
-  val opt     = Output(UInt(5.W))
+class ID_EX extends ID_EX_Output {
+  var ready = Input(Bool())
+}
 
-  var store_data = Output(UInt(32.W)) // for Store Inst only
+class EX_MEM extends Bundle {
+  val ramOp   = new RAMOp_Output
+  val wrRegOp = Output(new WrRegOp)
+  val wrCSROp = Output(new WrCSROp)
+  var ready   = Input(Bool())
 }
 
 class ID_CSR extends Bundle {

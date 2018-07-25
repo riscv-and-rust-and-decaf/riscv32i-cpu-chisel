@@ -9,7 +9,8 @@ class MMU extends Module {
     val dev = new Core_IO
   })
 
+  io.iff <> io.dev.if_
+  io.mem <> io.dev.mem
+
   // TODO: Translate address
-  io.dev.if_ <> io.iff
-  io.dev.mem <> io.mem
 }

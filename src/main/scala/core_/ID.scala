@@ -18,8 +18,6 @@ class ID extends Module {
     val iff = Flipped(new IF_ID)  // naming conflict if use `if`
     val reg = new ID_Reg
     val ex = new ID_EX
-    val wrRegOp = new WrRegOp
-    val wrCSROp = new WrCSROp
     val csr = new ID_CSR
   
     //exception
@@ -52,22 +50,23 @@ class ID extends Module {
   val d = io.debug
 
   val inst = RegInit(Const.NOP_INST)
+  val pc = RegInit(0.U(32.W))
   // If ID is stalling, the current instruction is not executed in this cycle.
   //    (i.e. current instruction is `flushed')
   // Therefore, on the next cycle, ID must execute the same instruction.
   // However when IF sees a `stall', it simply gives out a `nop'.
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
+
+  pc := io.iff.pc
+
   when(flush) {
     inst := Const.NOP_INST
   }
-  .elsewhen (!io.iff.id_stall) {
-    inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+  .elsewhen (io.iff.ready) {
+    pc := io.iff.pc
+    inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
   }
-
-
-  val pc = RegInit(0.U(32.W))
-  pc := io.iff.pc
 
   d.pc := pc
 
@@ -115,23 +114,25 @@ class ID extends Module {
   d.l := false.B
 
   //Null Init
-  io.iff.if_branch  := false.B
-  io.iff.branch_tar := 0.U
+  io.iff.branch.valid := false.B
+  io.iff.branch.bits  := 0.U
 
   io.ex.oprd1 := 0.U
   io.ex.oprd2 := 0.U
   io.ex.opt := decRes(DecTable.OPT)
   io.ex.store_data := 0.U
-  val wregAddr = Wire(UInt(5.W))
+  io.ex.wrRegOp.data := 0.U
+  io.ex.wrRegOp.rdy  := false.B
+  val wregAddr = io.ex.wrRegOp.addr
   wregAddr := 0.U
 
   io.csr.addr := 0.U
 
-  io.wrCSROp.mode := 0.U
-  io.wrCSROp.addr := csrAddr // don't care when mode==0
-  io.wrCSROp.oldVal := csrVal
-  io.wrCSROp.rsVal := 0.U
-  io.wrCSROp.newVal := 0.U
+  io.ex.wrCSROp.mode := 0.U
+  io.ex.wrCSROp.addr := csrAddr // don't care when mode==0
+  io.ex.wrCSROp.oldVal := csrVal
+  io.ex.wrCSROp.rsVal := 0.U
+  io.ex.wrCSROp.newVal := 0.U
 
   imm := 0.S
 
@@ -147,16 +148,16 @@ class ID extends Module {
     instTypesUsingRs1.map(x => x === instType).reduce(_ || _)
   val rs2Hazard = (rs2Addr === exWrRegOp.addr) && 
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
-  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard)
+  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
 
   when (stall) {
     // flush current instruction
     wregAddr := 0.U             // don't write registers
     io.ex.opt := OptCode.ADD    // don't write memory
-    io.iff.if_branch := false.B // don't branch
-    io.iff.id_stall := true.B   // tell IF not to advance
+    io.iff.branch.valid := false.B // don't branch
+    io.iff.ready := false.B     // tell IF not to advance
   } .otherwise {
-    io.iff.id_stall := false.B
+    io.iff.ready := true.B
     switch(instType) {
       is(InstType.R) {
         io.ex.oprd1 := rs1Val
@@ -170,8 +171,8 @@ class ID extends Module {
         wregAddr := rdAddr
 
         when(decRes(DecTable.OPT) === OptCode.JALR) {
-          io.iff.branch_tar := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
-          io.iff.if_branch  := true.B
+          io.iff.branch.bits := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
+          io.iff.branch.valid  := true.B
 
           io.ex.oprd1 := pc
           io.ex.oprd2 := 4.U
@@ -186,12 +187,12 @@ class ID extends Module {
       }
       is(InstType.B) {
         imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
-        io.iff.branch_tar := pc + imm.asUInt
+        io.iff.branch.bits := pc + imm.asUInt
         val bt = decRes(DecTable.OPT)
         val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
         val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
         val e = (rs1Val === rs2Val)
-        io.iff.if_branch := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
+        io.iff.branch.valid := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
         io.ex.opt := OptCode.ADD
 
@@ -208,8 +209,8 @@ class ID extends Module {
       }
       is(InstType.J) {
         imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
-        io.iff.branch_tar := pc + imm.asUInt
-        io.iff.if_branch  := true.B
+        io.iff.branch.bits := pc + imm.asUInt
+        io.iff.branch.valid  := true.B
 
         io.ex.oprd1 := pc
         io.ex.oprd2 := 4.U
@@ -223,8 +224,8 @@ class ID extends Module {
           io.csr.addr := csrAddr
           io.ex.oprd1 := csrVal
 
-          io.wrCSROp.mode := fct3(1,0)
-          io.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
+          io.ex.wrCSROp.mode := fct3(1,0)
+          io.ex.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
 
           wregAddr := rdAddr
         }
@@ -245,10 +246,6 @@ class ID extends Module {
       }
     }
   }
-
-  io.wrRegOp.addr := wregAddr
-  io.wrRegOp.data := 0.U
-  io.wrRegOp.rdy  := false.B
 
   io.excep.en   := excepEn
   io.excep.code := excepCode

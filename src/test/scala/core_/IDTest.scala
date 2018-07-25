@@ -8,6 +8,7 @@ class IDTest(t: ID) extends PeekPokeTester(t) {
   reset(10)
   poke(t.io.ifExcep.en, false.B)
   poke(t.io.csrExcepEn, false.B)
+  poke(t.io.ex.ready, true)
   poke(t.io.exWrRegOp.addr, 0) // no forwarding
   poke(t.io.memWrRegOp.addr, 0) // no forwarding
   poke(t.io.iff.inst, "b111111111110_00001_010_00010_0010011".U)
@@ -28,7 +29,7 @@ class IDTest(t: ID) extends PeekPokeTester(t) {
   expect(t.d.opt, BType.BNE)
   expect(t.d.bt, "b0_1010".U)
   expect(t.d.l, true.B)
-  expect(t.io.iff.if_branch, true.B)
+  expect(t.io.iff.branch.valid, true.B)
 
 }
 

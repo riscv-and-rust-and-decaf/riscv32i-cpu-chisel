@@ -1,6 +1,10 @@
-insts := $(patsubst %.s,%.bin,$(wildcard *.s))
+insts := $(patsubst %.s,%.bin,$(wildcard *.s)) \
+         $(patsubst %.c,%.c.bin,$(wildcard *.c))
 
 all: ${insts}
+
+%.c.bin: %.c
+	../tools/assembler $^
 
 %.bin: %.s
 	../tools/assembler $^
