@@ -58,13 +58,13 @@ class ID extends Module {
   // However when IF sees a `stall', it simply gives out a `nop'.
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
-  when (!io.iff.id_stall) {
-    inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
-  }
-
   when(flush) {
     inst := Const.NOP_INST
   }
+  .elsewhen (!io.iff.id_stall) {
+    inst := Mux(io.iff.if_branch, Const.NOP_INST, io.iff.inst)
+  }
+
 
   val pc = RegInit(0.U(32.W))
   pc := io.iff.pc

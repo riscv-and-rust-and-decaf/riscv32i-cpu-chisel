@@ -25,6 +25,7 @@ object RAMMode {
 }
 
 object CSRMODE {
+  val NOP = 0.U(2.W)
   val RW = 1.U(2.W)
   val RS = 2.U(2.W)
   val RC = 3.U(2.W)

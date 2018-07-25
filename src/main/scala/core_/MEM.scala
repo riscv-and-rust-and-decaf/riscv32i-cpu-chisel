@@ -84,8 +84,10 @@ class MEM extends Module {
   when(excepEn || io.csrExcepEn) {
     wregAddr := 0.U
     csrMode := 0.U
-    io.mmu.mode := RAMMode.NOP 
+    io.mmu.mode := RAMMode.NOP // TODO: change Reg opt instead of mmu.mode
+    printf("! Exception [%d] Pc: 0x%x Excep: %d\n", wregAddr, excepPc, excepEn);
   }
+  printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc

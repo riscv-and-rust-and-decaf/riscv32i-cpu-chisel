@@ -86,7 +86,7 @@ class CSR extends Module {
     ADDR.mip -> mip
   ))
 
-  when(io.mem.mode =/= 0.U) {
+  when(io.mem.mode =/= CSRMODE.NOP) {
     switch(io.mem.addr) {
       is(ADDR.mstatus) {mstatus := io.mem.newVal}
       is(ADDR.misa) {misa := io.mem.newVal}
@@ -115,9 +115,11 @@ class CSR extends Module {
       io.memExcep.code)
   }
 
+  val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
   pc := Mux(mtvec(1,0) === 0.U,
-    mtvec(31,2),
-    mtvec(31,2) + 4.U * mcause)
+    pcA4,
+    pcA4 + 4.U * mcause
+    )
 
   io.csrExcepPc := pc
   io.csrExcepEn := excep
