@@ -1,4 +1,5 @@
-_START:
+.global _start
+_start:
 	li x10, 10
 	li x2, 0
 	li x1, 0

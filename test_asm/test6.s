@@ -1,3 +1,5 @@
+.global _start
+_start:
     lui x1, 0xC0FFF
     addi x1, x1, -512
     addi x2, x0, 0x100

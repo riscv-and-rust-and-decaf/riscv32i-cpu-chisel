@@ -32,7 +32,7 @@ else
     exit 1
 fi
 
-CFLAGS="-mabi=ilp32 -march=rv32i -O2 -std=gnu99 -Wno-unused -fno-builtin -Wall -nostdinc -fno-stack-protector -ffunction-sections -fdata-sections -nostartfiles"
+CFLAGS="-mabi=ilp32 -march=rv32i -std=gnu99 -Wno-unused -fno-builtin -Wall -nostdinc -fno-stack-protector -ffunction-sections -fdata-sections -nostartfiles"
 
 fname=$1
 if [[ ${fname: -2} == ".c" ]]

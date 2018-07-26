@@ -6,10 +6,10 @@ volatile const u8* const serial_status = (const u8*)0x10000005;
 const int SERIAL_READ = 1 << 0;
 const int SERIAL_WRITE = 1 << 5;
 
-inline bool serial_can_read() {
+bool serial_can_read() {
     return *serial_status & SERIAL_READ;
 }
-inline bool serial_can_write() {
+bool serial_can_write() {
     return *serial_status & SERIAL_WRITE;
 }
 
@@ -28,7 +28,14 @@ void puts(const char* s) {
         putchar(*s);
 }
 
-void _start() {
+asm(
+".section .text\n"
+".global _start\n"
+"_start:\n"
+"li sp, 0x80001000\n"   // Set stack top
+"j main\n");
+
+int main()  {
     puts("Hello world!\n");
     char c;
     while((c = getchar()))
