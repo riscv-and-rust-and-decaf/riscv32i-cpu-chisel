@@ -49,11 +49,11 @@ class Core extends Module {
   mmu.io.dev <> io.dev
 
   //flush of exceptions
-  iff.io.csrExcepEn := csr.io.csrExcepEn
-  iff.io.csrExcepPc := csr.io.csrExcepPc
-  id.io.csrExcepEn := csr.io.csrExcepEn
-  ex.io.csrExcepEn := csr.io.csrExcepEn
-  mem.io.csrExcepEn := csr.io.csrExcepEn
+  iff.io.csrFlush := csr.io.csrFlush
+  iff.io.csrNewPc := csr.io.csrNewPc
+  id.io.csrFlush := csr.io.csrFlush
+  ex.io.csrFlush := csr.io.csrFlush
+  mem.io.csrFlush := csr.io.csrFlush
 
 
   // all the fxxking debug things... fxxk chisel

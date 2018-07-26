@@ -13,7 +13,7 @@ class EX extends Module {
     val idExcep = Flipped(new ExcepStatus)
     val excep  = new ExcepStatus
 
-    val csrExcepEn = Input(Bool())
+    val csrFlush = Input(Bool())
   })
   
   val excepEn = RegInit(false.B)
@@ -23,7 +23,7 @@ class EX extends Module {
   excepCode := io.idExcep.code
   excepPc   := io.idExcep.pc 
 
-  val flush = io.csrExcepEn
+  val flush = io.csrFlush
 
   // Stall
   io.id.ready := io.mem.ready

@@ -195,3 +195,11 @@ object Insts { // idea from mini riscv
 // SYS
   def SYS    = BitPat("b?????????????????????????1110011")
 }
+
+object SYS_INST {
+  def ECALL  = "b0000000000000000000000000".U
+  def EBREAK = "b0000000000010000000000000".U
+  def URET   = "b0000000000100000000000000".U
+  def SRET   = "b0001000000100000000000000".U
+  def MRET   = "b0011000000100000000000000".U
+}

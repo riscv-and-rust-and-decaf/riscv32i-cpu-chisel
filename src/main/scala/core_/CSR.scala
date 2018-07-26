@@ -11,8 +11,8 @@ class CSR extends Module {
 
     val memExcep = Flipped(new ExcepStatus)
 
-    val csrExcepEn = Output(Bool())
-    val csrExcepPc = Output(UInt(32.W))
+    val csrFlush = Output(Bool())
+    val csrNewPc = Output(UInt(32.W))
   })
 
   object PRV {
@@ -122,8 +122,8 @@ class CSR extends Module {
     pcA4 + 4.U * mcause
     )
 
-  io.csrExcepPc := pc
-  io.csrExcepEn := excep
+  io.csrNewPc := pc
+  io.csrFlush := excep
 
 }
 

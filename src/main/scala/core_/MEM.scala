@@ -15,7 +15,7 @@ class MEM extends Module {
     val exExcep = Flipped(new ExcepStatus)
     val excep  = new ExcepStatus // to CSR
 
-    val csrExcepEn = Input(Bool())
+    val csrFlush = Input(Bool())
   })
   
   val excepEn = RegInit(false.B)
@@ -58,7 +58,7 @@ class MEM extends Module {
   }
   io.wrCSROp := wrCSROp
 
-  when(io.csrExcepEn) {
+  when(io.csrFlush) {
     excepEn := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
