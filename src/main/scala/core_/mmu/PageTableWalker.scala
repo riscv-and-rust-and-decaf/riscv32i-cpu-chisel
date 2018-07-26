@@ -1,7 +1,8 @@
-package core_
+package core_.mmu
 
 import chisel3._
 import chisel3.util._
+import core_.{RAMMode, RAMOp}
 
 /// Virtual Page Number
 class PN extends Bundle {

@@ -1,5 +1,7 @@
-package core_
+package core_.mmu
+
 import chisel3._
+import core_._
 
 class MMU extends Module {
   val io = IO(new Bundle {

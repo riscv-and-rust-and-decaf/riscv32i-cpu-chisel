@@ -1,6 +1,7 @@
 package core_
 
 import chisel3._
+import core_.mmu.MMU
 
 class CoreState extends Bundle {
   val idex      = new ID_EX_Output()

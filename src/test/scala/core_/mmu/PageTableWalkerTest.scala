@@ -1,8 +1,9 @@
-package core_
+package core_.mmu
 
 import chisel3._
 import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
 import chisel3.util._
+import core_.{RAMOp, TestUtil}
 import devices.MockRam
 
 class PageTableWalkerTestModule() extends Module {
