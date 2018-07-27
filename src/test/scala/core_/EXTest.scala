@@ -22,8 +22,8 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
   private def toUInt(x: Int): UInt =
     if (x >= 0) x.U else (x.toLong + 0x100000000L).U
 
-  poke(ex.io.idExcep.en, false.B)
-  poke(ex.io.csrExcepEn, false.B)
+  poke(ex.io.id.excep.valid, false.B)
+  poke(ex.io.flush, false.B)
 
   for ((op, func) <- ops) {
     for (_ <- 0 until 10) {

@@ -5,8 +5,8 @@ import core_._
 
 class MMU extends Module {
   val io = IO(new Bundle {
-    val iff = Flipped(new RAMOp())
-    val mem = Flipped(new RAMOp())
+    val iff = Flipped(new IF_MMU())
+    val mem = Flipped(new MEM_MMU())
 
     val dev = new Core_IO
   })
@@ -33,6 +33,10 @@ class MMU extends Module {
   tlb.io.modify.mode := TLBOp.None
   tlb.io.modify.vpn := 0.U.asTypeOf(new PN)
   tlb.io.modify.ppn := 0.U.asTypeOf(new PN)
+
+  io.iff.instPageFault := false.B
+  io.mem.loadPageFault := false.B
+  io.mem.storePageFault := false.B
 
   // TODO: Translate address
 }

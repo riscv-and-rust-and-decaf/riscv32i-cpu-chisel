@@ -20,11 +20,7 @@ class ID extends Module {
     val ex = new ID_EX
     val csr = new ID_CSR
   
-    //exception
-    val ifExcep = Flipped(new ExcepStatus)
-    val excep  = new ExcepStatus
-  
-    val csrExcepEn = Input(Bool())
+    val flush = Input(Bool())
 
     // forwarding
     val exWrRegOp = Flipped(new WrRegOp)
@@ -37,19 +33,11 @@ class ID extends Module {
     val debug = new IDState()
   })
 
-  val excepEn = RegInit(false.B)
-  val excepCode = RegInit(0.U(32.W))
-  val excepPc  = RegInit(0.U(32.W))
-  excepEn   := io.ifExcep.en
-  excepCode := io.ifExcep.code
-  excepPc   := io.ifExcep.pc
+  val excep = RegInit(0.U.asTypeOf(new Exception))
+  excep := io.iff.excep
+  io.ex.excep := excep
 
-
-  io.excep.en   := excepEn
-  io.excep.code := excepCode
-  io.excep.pc   := excepPc
-
-  val flush = io.csrExcepEn
+  val flush = io.flush
 
   val d = io.debug
 
@@ -235,17 +223,17 @@ class ID extends Module {
         }
         .otherwise {
           //TODO:  EBREAK
-          when(!excepEn) {
-            io.excep.en := true.B
-            io.excep.code := Cause.ECallU
+          when(!excep.valid) {
+            io.ex.excep.valid := true.B
+            io.ex.excep.code := Cause.ECallU
           }
         }
 
       }
       is(InstType.BAD) {
-        when(!excepEn) {
-          io.excep.en := true.B
-          io.excep.code := Cause.IllegalInstruction
+        when(!excep.valid) {
+          io.ex.excep.valid := true.B
+          io.ex.excep.code := Cause.IllegalInstruction
         }
       }
     }

@@ -6,24 +6,17 @@ import chisel3.util._
 class MEM extends Module {
   val io = IO(new Bundle {
     val ex  = Flipped(new EX_MEM)
-    val mmu = new RAMOp
+    val mmu = new MEM_MMU
+    val csr = new MEM_CSR
    
     val wrRegOp   = new WrRegOp
-    val wrCSROp   = new WrCSROp
 
-    //exception
-    val exExcep = Flipped(new ExcepStatus)
-    val excep  = new ExcepStatus // to CSR
-
-    val csrExcepEn = Input(Bool())
+    val flush = Input(Bool())
   })
-  
-  val excepEn = RegInit(false.B)
-  val excepCode = RegInit(0.U(32.W))
-  val excepPc  = RegInit(0.U(32.W))
-  excepEn   := io.exExcep.en
-  excepCode := io.exExcep.code
-  excepPc   := io.exExcep.pc
+
+  val excep = RegInit(0.U.asTypeOf(new Exception))
+  excep := io.ex.excep
+  io.csr.excep := excep
 
   // Lock input
   val ramOp       = RegInit(0.U.asTypeOf(new RAMOp_Output))
@@ -56,25 +49,21 @@ class MEM extends Module {
   when(!stall) {
     wrCSROp := io.ex.wrCSROp
   }
-  io.wrCSROp := wrCSROp
+  io.csr.wrCSROp := wrCSROp
 
-  when(io.csrExcepEn) {
-    excepEn := false.B
+  when(io.flush) {
+    io.csr.excep.valid := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
     ramOp.mode := RAMMode.NOP
     //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
   }
-  when(excepEn) {
+  when(excep.valid) {
     io.wrRegOp.addr := 0.U
-    io.wrCSROp.mode := CSRMODE.NOP
+    io.csr.wrCSROp.mode := CSRMODE.NOP
     io.mmu.mode := RAMMode.NOP
     //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
   }
 
   //printf("[MEM] Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data)
-  io.excep.en   := excepEn
-  io.excep.code := excepCode
-  io.excep.pc   := excepPc
-
 }

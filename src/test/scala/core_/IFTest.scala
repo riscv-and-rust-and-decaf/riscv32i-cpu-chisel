@@ -9,7 +9,6 @@ class IFTest(t: IF) extends PeekPokeTester(t) {
     poke(t.io.id.branch.valid, 0)
     poke(t.io.id.ready, 1)
     poke(t.io.mmu.ok, 1)
-    poke(t.io.csrExcepEn, false)
   }
 
   val PC_BASE = 0x80000000L
@@ -61,8 +60,6 @@ class IFTest(t: IF) extends PeekPokeTester(t) {
   poke(t.io.mmu.ok, 1)
   step(1)
   expect(t.io.id.pc, PC_BASE + 80)
-
-  // TODO: test exception branch
 }
 
 

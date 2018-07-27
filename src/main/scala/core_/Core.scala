@@ -26,35 +26,34 @@ class Core extends Module {
   val mmu = Module(new MMU())
   val csr = Module(new CSR())
 
-  iff.io.mmu   <> mmu.io.iff
-  iff.io.id    <> id.io.iff
-  iff.io.excep <> id.io.ifExcep
-
+  // IF -> ID -> EX -> MEM -> Reg/CSR
+  iff.io.id        <> id.io.iff
   id.io.ex         <> ex.io.id
+  ex.io.mem        <> mem.io.ex
+  mem.io.wrRegOp   <> reg.io.mem
+  mem.io.csr       <> csr.io.mem
+
+  // ID read Reg & forwarding
   id.io.reg        <> reg.io.id
   id.io.csr        <> csr.io.id 
   id.io.exWrRegOp  <> ex.io.mem.wrRegOp
   id.io.memWrRegOp <> mem.io.wrRegOp
   id.io.exWrCSROp  <> ex.io.mem.wrCSROp
-  id.io.memWrCSROp <> mem.io.wrCSROp
-  id.io.excep      <> ex.io.idExcep
+  id.io.memWrCSROp <> mem.io.csr.wrCSROp
 
-  ex.io.mem     <> mem.io.ex
-  ex.io.excep   <> mem.io.exExcep
+  // IF / MEM -> MMU
+  iff.io.mmu       <> mmu.io.iff
+  mem.io.mmu       <> mmu.io.mem
 
-  mem.io.mmu     <> mmu.io.mem
-  mem.io.wrRegOp <> reg.io.mem
-  mem.io.wrCSROp <> csr.io.mem
-  mem.io.excep   <> csr.io.memExcep
-
+  // MMU -> out
   mmu.io.dev <> io.dev
 
   //flush of exceptions
-  iff.io.csrExcepEn := csr.io.csrExcepEn
-  iff.io.csrExcepPc := csr.io.csrExcepPc
-  id.io.csrExcepEn := csr.io.csrExcepEn
-  ex.io.csrExcepEn := csr.io.csrExcepEn
-  mem.io.csrExcepEn := csr.io.csrExcepEn
+  iff.io.id.branch.valid := csr.io.flush | id.io.iff.branch.valid
+  iff.io.id.branch.bits := Mux(csr.io.flush, csr.io.csrExcepPc, id.io.iff.branch.bits)
+  id.io.flush := csr.io.flush
+  ex.io.flush := csr.io.flush
+  mem.io.flush := csr.io.flush
 
 
   // all the fxxking debug things... fxxk chisel
