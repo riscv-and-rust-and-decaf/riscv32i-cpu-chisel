@@ -41,7 +41,7 @@ object PTE {
 }
 
 /// Translate VPN to PPN by reading page table at memory
-class PageTableWalker extends Module {
+class PTW extends Module {
   val io = IO(new Bundle {
     val set_root = Input(Valid(new PN()))
     val req = DeqIO(new PN()) // Request
