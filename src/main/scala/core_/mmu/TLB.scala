@@ -23,7 +23,8 @@ object TLBOp {
 
 class TLB(val SIZE_LOG2: Int) extends Module {
   val io = IO(new Bundle {
-    val query = new TLBQuery    // Response at the same cycle
+    val query = new TLBQuery    // | Response at the same cycle
+    val query2 = new TLBQuery   // | If reset = 1, rsp = req
     val modify = new TLBModify  // Do at rising edge
   })
   val SIZE = 1 << SIZE_LOG2
@@ -34,6 +35,7 @@ class TLB(val SIZE_LOG2: Int) extends Module {
     val ppn = new PN
   }
   val entries = Mem(new TLBEntry, SIZE)
+  // TODO: Change to direct mapping. Fully associative mapping makes compiling very slow.
 
   // Debug
 //  for(i <- 0 until SIZE)
@@ -47,10 +49,24 @@ class TLB(val SIZE_LOG2: Int) extends Module {
   }
 
   // Handle query
-  io.query.rsp.valid := io.query.req.valid && MuxLookup(io.query.req.bits.asUInt, false.B,
-    (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).valid)))
-  io.query.rsp.bits := MuxLookup(io.query.req.bits.asUInt, 0.U,
-    (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).ppn.asUInt))).asTypeOf(new PN)
+  when(reset.toBool) {
+    io.query.rsp := io.query.req
+  }.otherwise {
+    io.query.rsp.valid := io.query.req.valid && MuxLookup(io.query.req.bits.asUInt, false.B,
+      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).valid)))
+    io.query.rsp.bits := MuxLookup(io.query.req.bits.asUInt, 0.U,
+      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).ppn.asUInt))).asTypeOf(new PN)
+  }
+
+  // Handle query2
+  when(reset.toBool) {
+    io.query2.rsp := io.query2.req
+  }.otherwise {
+    io.query2.rsp.valid := io.query2.req.valid && MuxLookup(io.query2.req.bits.asUInt, false.B,
+      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).valid)))
+    io.query2.rsp.bits := MuxLookup(io.query2.req.bits.asUInt, 0.U,
+      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).ppn.asUInt))).asTypeOf(new PN)
+  }
 
   // Handle modify, at rising edge
 

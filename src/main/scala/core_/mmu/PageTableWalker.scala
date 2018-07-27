@@ -14,6 +14,7 @@ class PN extends Bundle {
 
 object PN {
   val ZERO = 0.U(20.W).asTypeOf(new PN)
+  def fromAddr[T <: Bits](addr: T): PN = addr(31, 12).asTypeOf(new PN)
 }
 
 // Page Table Entry
