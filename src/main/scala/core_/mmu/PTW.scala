@@ -51,11 +51,10 @@ class PTW extends Module {
 
   val sIdle :: sWait2 :: sWait1 :: Nil = Enum(3)
 
-  val status      = RegInit(sIdle)
-  val root_ppn    = RegInit(PN.ZERO)
-  val lock_req    = RegNext(io.req)
-  val lock_pte    = RegNext(io.mem.rdata.asTypeOf(new PTE))
-  val lock_mem_ok = RegNext(io.mem.ok)
+  val status   = RegInit(sIdle)
+  val root_ppn = RegInit(PN.ZERO)
+
+  val pte      = io.mem.rdata.asTypeOf(new PTE)
 
   // Reset root PPN
   when(io.set_root.valid) {
@@ -75,42 +74,42 @@ class PTW extends Module {
 
   switch(status) {
     is(sIdle) {
-      when(lock_req.valid) {
+      when(io.req.valid) {
         // Memory access for P2
         io.mem.mode := RAMMode.LW
-        io.mem.addr := root_ppn.toAddr(lock_req.bits.p2 << 2.U)
+        io.mem.addr := root_ppn.toAddr(io.req.bits.p2 << 2.U)
         status := sWait2
       }
     }
     is(sWait2) {
-      when(lock_mem_ok) {
+      when(io.mem.ok) {
         // Check PTE
-        when(!lock_pte.V) { // error, response
+        when(!pte.V) { // error, response
           io.rsp.valid := true.B
           io.rsp.bits.valid := false.B
           when(io.rsp.ready) { // ack
             status := sIdle
           }
-        }.elsewhen(!lock_pte.isPDE) { // Response huge page
+        }.elsewhen(!pte.isPDE) { // Response huge page
           io.rsp.valid := true.B
-          io.rsp.bits.valid := !lock_pte.ppn.p1.orR // Test error? : Not 4M aligned
-          io.rsp.bits.bits := lock_pte
+          io.rsp.bits.valid := !pte.ppn.p1.orR // Test error? : Not 4M aligned
+          io.rsp.bits.bits := pte
           when(io.rsp.ready) { // ack
             status := sIdle
           }
         }.otherwise {
           // Memory access for P1
           io.mem.mode := RAMMode.LW
-          io.mem.addr := lock_pte.ppn.toAddr(lock_req.bits.p1 << 2.U)
+          io.mem.addr := pte.ppn.toAddr(io.req.bits.p1 << 2.U)
           status := sWait1
         }
       }
     }
     is(sWait1) {
-      when(lock_mem_ok) { // Response
+      when(io.mem.ok) { // Response
         io.rsp.valid := true.B
-        io.rsp.bits.valid := lock_pte.isLeaf
-        io.rsp.bits.bits := lock_pte
+        io.rsp.bits.valid := pte.isLeaf
+        io.rsp.bits.bits := pte
         when(io.rsp.ready) { // ack
           status := sIdle
         }
