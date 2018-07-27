@@ -237,7 +237,7 @@ class ID extends Module {
           //TODO:  EBREAK
           when(!excepEn) {
             io.excep.en := true.B
-            io.excep.code := 8.U
+            io.excep.code := Cause.ECallU
           }
         }
 
@@ -245,7 +245,7 @@ class ID extends Module {
       is(InstType.BAD) {
         when(!excepEn) {
           io.excep.en := true.B
-          io.excep.code := 2.U
+          io.excep.code := Cause.IllegalInstruction
         }
       }
     }

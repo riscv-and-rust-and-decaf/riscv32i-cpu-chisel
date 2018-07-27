@@ -111,7 +111,7 @@ class CSR extends Module {
 
   when(io.memExcep.en) {
     mepc   := io.memExcep.pc
-    mcause := Mux(io.memExcep.code === 8.U,
+    mcause := Mux(io.memExcep.code === Cause.ECallU,
       io.memExcep.code + prv, 
       io.memExcep.code)
   }

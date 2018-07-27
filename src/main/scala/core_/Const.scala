@@ -71,6 +71,44 @@ object UType {
   val AUIPC = "b0000_1".U
 }
 
+object Cause {
+  val Interrupt = 1.U(1.W)
+  val Exception = 0.U(1.W)
+
+  // software interrupt
+  val USI = 0.U
+  val SSI = 1.U
+  val HSI = 2.U
+  val MSI = 3.U
+
+  // timer interrupt
+  val UTI = 4.U
+  val STI = 5.U
+  val HTI = 6.U
+  val MTI = 7.U
+
+  // External interrupt
+  val UEI = 8.U
+  val SEI = 9.U
+  val HEI = 10.U
+  val MEI = 11.U
+
+  val InstAddressMisaligned  = 0.U
+  val InstAccessFault        = 1.U
+  val IllegalInstruction     = 2.U
+  val BreakPoint             = 3.U
+  val LoadAddressMisaligned  = 4.U
+  val LoadAccessFault        = 5.U
+  val StoreAddressMisaligned = 6.U
+  val StoreAccessFault       = 7.U
+  val ECallU                 = 8.U
+  val ECallS                 = 9.U
+  val ECallM                 = 11.U
+  val InstPageFault          = 12.U
+  val LoadPageFault          = 13.U
+  val SavePageFault          = 15.U
+}
+
 object InstType {
   // R,I,S,B,U,J
   val BAD = 0.U(3.W)
