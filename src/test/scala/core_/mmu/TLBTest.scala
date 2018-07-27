@@ -42,12 +42,16 @@ class TLBTest(m: TLB) extends PeekPokeTester(m) {
 
   // Insert
   insert(1, 2)
-  check(0, None)
   check(1, Some(2))
 
-  // Insert override
+  // Insert override value
   insert(1, 0xfffff)
   check(1, Some(0xfffff))
+
+  // Insert override key
+  insert(5, 3)
+  check(5, Some(3))
+  check(1, None)
 
   // Remove
   remove(1)
@@ -62,24 +66,6 @@ class TLBTest(m: TLB) extends PeekPokeTester(m) {
   check(2, Some(3))
   check(3, Some(2))
   check(4, Some(1))
-  check(5, None)
-
-  // Insert replace
-  insert(5, 5)
-  check(1, None)
-  check(2, Some(3))
-  check(3, Some(2))
-  check(4, Some(1))
-  check(5, Some(5))
-
-  // Remove and insert
-  remove(2)
-  insert(1, 1)
-  check(1, Some(1))
-  check(2, None)
-  check(3, Some(2))
-  check(4, Some(1))
-  check(5, Some(5))
 
   // Clear
   clear()

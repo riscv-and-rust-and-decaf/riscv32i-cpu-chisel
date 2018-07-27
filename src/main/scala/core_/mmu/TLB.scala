@@ -35,7 +35,6 @@ class TLB(val SIZE_LOG2: Int) extends Module {
     val ppn = new PN
   }
   val entries = Mem(new TLBEntry, SIZE)
-  // TODO: Change to direct mapping. Fully associative mapping makes compiling very slow.
 
   // Debug
 //  for(i <- 0 until SIZE)
@@ -49,48 +48,36 @@ class TLB(val SIZE_LOG2: Int) extends Module {
   }
 
   // Handle query
-  when(reset.toBool) {
-    io.query.rsp := io.query.req
-  }.otherwise {
-    io.query.rsp.valid := io.query.req.valid && MuxLookup(io.query.req.bits.asUInt, false.B,
-      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).valid)))
-    io.query.rsp.bits := MuxLookup(io.query.req.bits.asUInt, 0.U,
-      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).ppn.asUInt))).asTypeOf(new PN)
+  def handleQuery(q: TLBQuery): Unit = {
+    when(reset.toBool) {
+      q.rsp := q.req
+    }.otherwise {
+      val id = q.req.bits.asUInt()(SIZE_LOG2-1, 0)
+      val entry = entries(id)
+      q.rsp.valid := q.req.valid && entry.valid && entry.vpn.asUInt === q.req.bits.asUInt
+      q.rsp.bits := entry.ppn
+    }
   }
-
-  // Handle query2
-  when(reset.toBool) {
-    io.query2.rsp := io.query2.req
-  }.otherwise {
-    io.query2.rsp.valid := io.query2.req.valid && MuxLookup(io.query2.req.bits.asUInt, false.B,
-      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).valid)))
-    io.query2.rsp.bits := MuxLookup(io.query2.req.bits.asUInt, 0.U,
-      (0 until SIZE).map(i => (entries(i).vpn.asUInt, entries(i).ppn.asUInt))).asTypeOf(new PN)
-  }
+  handleQuery(io.query)
+  handleQuery(io.query2)
 
   // Handle modify, at rising edge
 
-  val randId = RegInit(1.U(SIZE_LOG2.W))
-  randId := randId + 1.U
-
   // + insert
-  val nextFreeId = MuxLookup(false.B, randId,
-    (0 until SIZE).map(i => (entries(i).valid, i.U)))
-  val insertId = MuxLookup(io.modify.vpn.asUInt, nextFreeId,
-    (0 until SIZE).map(i => (entries(i).vpn.asUInt, i.U)))
+  val id = io.modify.vpn.asUInt()(SIZE_LOG2-1, 0)
   when(io.modify.mode === TLBOp.Insert) {
-    val entry = entries(insertId)
-    entry.valid := true.B
-    entry.vpn := io.modify.vpn
-    entry.ppn := io.modify.ppn
+    // WARNING: Don't define `entry = entries(id)`
+    //          then use `entry` as a l-value.
+    //          It makes writing delay a cycle.
+    entries(id).valid := true.B
+    entries(id).vpn := io.modify.vpn
+    entries(id).ppn := io.modify.ppn
   }
 
   // - remove
   when(io.modify.mode === TLBOp.Remove) {
-    for(i <- 0 until SIZE) {
-      when(entries(i).vpn.asUInt === io.modify.vpn.asUInt) {
-        entries(i).valid := false.B
-      }
+    when(entries(id).vpn.asUInt === io.modify.vpn.asUInt) {
+      entries(id).valid := false.B
     }
   }
 }
