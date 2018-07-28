@@ -6,6 +6,7 @@ import chisel3.util._
 class TLBQuery extends Bundle {
   val req = Input(Valid(new PN))
   val rsp = Output(Valid(new PTE))
+  def miss = req.valid && !rsp.valid
 }
 
 class TLBModify extends Bundle {

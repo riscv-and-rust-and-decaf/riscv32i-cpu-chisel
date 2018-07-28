@@ -15,6 +15,7 @@ class CSR extends Module {
   })
 
   val priv = RegInit(Priv.M)
+  priv := priv
 
   object ADDR {
     // M Info
@@ -85,7 +86,6 @@ class CSR extends Module {
     csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
   }
 
-  val pc = Wire(UInt(32.W))
   //val excep = Wire(Bool())
   val excep = RegInit(false.B)
 
@@ -100,7 +100,7 @@ class CSR extends Module {
 
   val mtvec = csr(ADDR.mtvec)
   val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
-  pc := Mux(mtvec(1,0) === 0.U,
+  val pc = Mux(mtvec(1,0) === 0.U,
     pcA4,
     pcA4 + 4.U * csr(ADDR.mcause)
   )

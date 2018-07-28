@@ -17,9 +17,18 @@ class MMU extends Module {
   val ptw = Module(new PTW())
   val tlb = Module(new TLB(4))
 
+  // Whether all IO finished at the next rising edge.
+  // Only when `ready = 1`, satp change or TLB invalidation can be accepted at next cycle.
+  val ready = io.iff.ready && io.mem.ready
+
+  val satp = RegInit(0.U(32.W))
+  when(ready) {
+    satp := io.csr.satp
+  }
+
   // Enable MMU?
-  tlb.reset := !io.csr.satp(31)
-  ptw.io.root := io.csr.satp(19, 0).asTypeOf(new PN)
+  tlb.reset := !satp(31)
+  ptw.io.root := satp(19, 0).asTypeOf(new PN)
 
   val null_device = Module(new NullDev)
   ptw.io.mem <> null_device.io
@@ -36,11 +45,9 @@ class MMU extends Module {
     // pop.out -> vop.out
     vop.ok := pop.ok && tlb.rsp.valid
     vop.rdata := pop.rdata
-    // If TLB miss, lend IO port to PTW
-    val miss = tlb.req.valid && !tlb.rsp.valid
-    when(miss) {
-      // PTW.mem <-> pop
-      ptw.io.mem <> pop
+
+    when(tlb.miss) {
+      pop.mode := 0.U
       vop.ok := false.B
     }.elsewhen(vop.pageFault) {
       pop.mode := 0.U
@@ -80,13 +87,15 @@ class MMU extends Module {
   //
   // Status:
   // - Ready:
-  //   - 2 TLB queries is (always) open
-  //   - If TLB miss is detected, send request to PTW, then go to Walking.
+  //   - 2 IO path is available
+  //   - If TLB miss is detected, and the other IO is finished,
+  //     send request to PTW, then go to Walking.
   // - Walking:
-  //   - Wait for PTW response, then refill TLB.
+  //   - 2 IO path is blocked. PTW is connected to IF port.
+  //   - Wait for PTW response, then refill TLB, go to Ready.
   val sReady :: sWalking :: Nil = Enum(2)
   val status = RegInit(sReady)
-  val ptw_vpn = RegInit(0.U.asTypeOf(new PN))
+  val ptw_vpn = RegInit(0.U.asTypeOf(new PN)) // Stored at Ready->Walking
 
   // Default output
   ptw.io.req.valid := false.B
@@ -98,21 +107,30 @@ class MMU extends Module {
 
   switch(status) {
     is(sReady) {
-      def detect(query: TLBQuery): Unit = {
-        val miss = query.req.valid && !query.rsp.valid
-        when(miss) {
+      def detect(tlb: TLBQuery, otherReady: Bool): Unit = {
+        when(tlb.miss && otherReady && ptw.io.req.ready) {
           ptw.io.req.valid := true.B
-          ptw.io.req.bits := query.req.bits
-          when(ptw.io.req.ready) {
-            status := sWalking
-            ptw_vpn := query.req.bits
-          }
+          ptw.io.req.bits := tlb.req.bits
+          status := sWalking
+          ptw_vpn := tlb.req.bits
         }
       }
-      detect(tlb.io.query)
-      detect(tlb.io.query2)
+      detect(tlb.io.query, io.dev.mem.ready)
+      detect(tlb.io.query2, io.dev.if_.ready)
     }
     is(sWalking) {
+      // io.dev.if_ <> ptw.io.mem
+
+      // Insert Reg to avoid combinational loop
+      // Better way to do this ?
+      io.dev.if_.addr := RegNext(ptw.io.mem.addr)
+      io.dev.if_.mode := RegNext(ptw.io.mem.mode)
+      io.dev.if_.wdata := 0.U
+      ptw.io.mem.rdata := io.dev.if_.rdata
+      ptw.io.mem.ok := io.dev.if_.ok
+
+      io.iff.ok := false.B
+      io.mem.ok := false.B
       ptw.io.rsp.ready := true.B
       when(ptw.io.rsp.valid) {
         tlb.io.modify.mode := TLBOp.Insert
@@ -122,4 +140,7 @@ class MMU extends Module {
       }
     }
   }
+
+  // To force update value in wave ...
+  val _dummy1 = RegNext(ptw.io.req.valid)
 }

@@ -51,6 +51,8 @@ class RAMOp_Output extends Bundle {
 class RAMOp extends RAMOp_Output {
   val rdata = Input(UInt(32.W))
   val ok    = Input(Bool())
+  // Can accept a new IO request next cycle ?
+  def ready = mode === RAMMode.NOP || ok
 }
 
 class MMUOp extends RAMOp {
