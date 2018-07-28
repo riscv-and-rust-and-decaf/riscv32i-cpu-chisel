@@ -12,8 +12,8 @@ class TLBTest(m: TLB) extends PeekPokeTester(m) {
     poke(m.io.modify.mode, TLBOp.Insert)
     poke(m.io.modify.vpn.p2, vpn >> 10)
     poke(m.io.modify.vpn.p1, vpn & 0x3ff)
-    poke(m.io.modify.ppn.p2, ppn >> 10)
-    poke(m.io.modify.ppn.p1, ppn & 0x3ff)
+    poke(m.io.modify.pte.ppn.p2, ppn >> 10)
+    poke(m.io.modify.pte.ppn.p1, ppn & 0x3ff)
     step(1)
   }
 
@@ -35,8 +35,8 @@ class TLBTest(m: TLB) extends PeekPokeTester(m) {
     poke(m.io.query.req.bits.p1, vpn & 0x3ff)
     expect(m.io.query.rsp.valid, ppn.isDefined)
     if(ppn.isDefined) {
-      expect(m.io.query.rsp.bits.p2, ppn.get >> 10)
-      expect(m.io.query.rsp.bits.p1, ppn.get & 0x3ff)
+      expect(m.io.query.rsp.bits.ppn.p2, ppn.get >> 10)
+      expect(m.io.query.rsp.bits.ppn.p1, ppn.get & 0x3ff)
     }
   }
 

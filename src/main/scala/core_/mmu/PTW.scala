@@ -51,8 +51,8 @@ class PTW extends Module {
 
   val sIdle :: sWait2 :: sWait1 :: Nil = Enum(3)
   val status = RegInit(sIdle)
-
-  val pte = io.mem.rdata.asTypeOf(new PTE)
+  val pte    = RegNext(io.mem.rdata.asTypeOf(new PTE))
+  val mem_ok = RegNext(io.mem.ok)
 
   io.req.ready := status === sIdle
 
@@ -61,7 +61,7 @@ class PTW extends Module {
   io.mem.addr := 0.U
   io.mem.wdata := 0.U
   io.rsp.valid := false.B
-  io.rsp.bits := PTE.ZERO
+  io.rsp.bits := 0.U.asTypeOf(new PTE)
 
   switch(status) {
     is(sIdle) {
@@ -73,7 +73,7 @@ class PTW extends Module {
       }
     }
     is(sWait2) {
-      when(io.mem.ok) {
+      when(mem_ok) {
         // Check PTE
         when(!pte.V) { // error, response
           io.rsp.valid := true.B
@@ -96,7 +96,7 @@ class PTW extends Module {
       }
     }
     is(sWait1) {
-      when(io.mem.ok) { // Response
+      when(mem_ok) { // Response
         io.rsp.valid := true.B
         io.rsp.bits := pte
         io.rsp.bits.V := pte.isLeaf

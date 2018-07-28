@@ -55,6 +55,19 @@ class CSR extends Module {
 
   val csr = Mem(0x400, UInt(32.W))
 
+  when(reset.toBool) {
+    // Don't use `for(i <- 0 until 0x400)`.
+    // It will generate many unused D-triggers, which slow down the compiling.
+    //
+    // Just reflect all fields in ADDR
+    for(i <- ADDR.getClass.getDeclaredFields.map(f => {
+      f.setAccessible(true)
+      f.get(ADDR).asInstanceOf[UInt]
+    })) {
+      csr(i) := 0.U
+    }
+  }
+
   // read-only m info
   val mvendorid = 2333.U(32.W)
   val marchid   = "h8fffffff".U(32.W)

@@ -106,7 +106,7 @@ object Cause {
   val ECallM                 = 11.U
   val InstPageFault          = 12.U
   val LoadPageFault          = 13.U
-  val SavePageFault          = 15.U
+  val StorePageFault         = 15.U
 }
 
 object InstType {

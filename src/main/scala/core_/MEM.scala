@@ -6,17 +6,13 @@ import chisel3.util._
 class MEM extends Module {
   val io = IO(new Bundle {
     val ex  = Flipped(new EX_MEM)
-    val mmu = new MEM_MMU
+    val mmu = new MMUOp
     val csr = new MEM_CSR
    
     val wrRegOp   = new WrRegOp
 
     val flush = Input(Bool())
   })
-
-  val excep = RegInit(0.U.asTypeOf(new Exception))
-  excep := io.ex.excep
-  io.csr.excep := excep
 
   // Lock input
   val ramOp       = RegInit(0.U.asTypeOf(new RAMOp_Output))
@@ -46,10 +42,19 @@ class MEM extends Module {
   //------------------- CSR ----------------------
 
   val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
+  val excep = RegInit(0.U.asTypeOf(new Exception))
   when(!stall) {
     wrCSROp := io.ex.wrCSROp
+    excep := io.ex.excep
   }
   io.csr.wrCSROp := wrCSROp
+  io.csr.excep := excep
+
+  // PageFault
+  when(io.mmu.pageFault) {
+    io.csr.excep.valid := true.B
+    io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
+  }
 
   when(io.flush) {
     io.csr.excep.valid := false.B

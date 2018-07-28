@@ -53,14 +53,8 @@ class RAMOp extends RAMOp_Output {
   val ok    = Input(Bool())
 }
 
-class IF_MMU extends RAMOp {
-  val instPageFault = Input(Bool())
-}
-
-class MEM_MMU extends RAMOp {
-  val loadPageFault = Input(Bool())
-  val storePageFault = Input(Bool())
-//  val invalidate_addr = Output(Valid(UInt(32.W)))
+class MMUOp extends RAMOp {
+  val pageFault = Input(Bool())
 }
 
 class CSR_MMU extends Bundle {

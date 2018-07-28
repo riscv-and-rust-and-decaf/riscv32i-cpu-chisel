@@ -6,7 +6,7 @@ import chisel3.util._
 
 class IF extends Module {
   val io = IO(new Bundle {
-    val mmu = new IF_MMU
+    val mmu = new MMUOp
     val id = new IF_ID
   })
 
@@ -47,7 +47,11 @@ class IF extends Module {
   }.otherwise {
     io.id.pc   := pc
     io.id.inst := io.mmu.rdata
-    when(io.mmu.instPageFault) {
+    when(pc(1,0).orR) {
+      io.id.excep.valid := true.B
+      io.id.excep.code := Cause.InstAddressMisaligned
+    }
+    when(io.mmu.pageFault) {
       io.id.excep.valid := true.B
       io.id.excep.code := Cause.InstPageFault
     }

@@ -5,13 +5,13 @@ import chisel3.util._
 
 class TLBQuery extends Bundle {
   val req = Input(Valid(new PN))
-  val rsp = Output(Valid(new PN))
+  val rsp = Output(Valid(new PTE))
 }
 
 class TLBModify extends Bundle {
   val mode = Input(UInt(2.W))
-  val vpn = Input(new PN)
-  val ppn = Input(new PN)    // Only used when insert
+  val vpn  = Input(new PN)
+  val pte  = Input(new PTE)    // Only used when insert
 }
 
 object TLBOp {
@@ -31,10 +31,10 @@ class TLB(val SIZE_LOG2: Int) extends Module {
 
   class TLBEntry extends Bundle {
     val valid = Bool()
-    val vpn = new PN
-    val ppn = new PN
+    val vpn   = new PN
+    val pte   = new PTE
   }
-  val entries = Mem(new TLBEntry, SIZE)
+  val entries = Mem(SIZE, new TLBEntry)
 
   // Debug
 //  for(i <- 0 until SIZE)
@@ -50,12 +50,19 @@ class TLB(val SIZE_LOG2: Int) extends Module {
   // Handle query
   def handleQuery(q: TLBQuery): Unit = {
     when(reset.toBool) {
-      q.rsp := q.req
+      q.rsp.valid := q.req.valid
+      q.rsp.bits := 0.U.asTypeOf(new PTE)
+      q.rsp.bits.ppn := q.req.bits
+      q.rsp.bits.V := true.B
+      q.rsp.bits.X := true.B
+      q.rsp.bits.R := true.B
+      q.rsp.bits.W := true.B
+      q.rsp.bits.U := true.B
     }.otherwise {
       val id = q.req.bits.asUInt()(SIZE_LOG2-1, 0)
       val entry = entries(id)
       q.rsp.valid := q.req.valid && entry.valid && entry.vpn.asUInt === q.req.bits.asUInt
-      q.rsp.bits := entry.ppn
+      q.rsp.bits := entry.pte
     }
   }
   handleQuery(io.query)
@@ -71,7 +78,7 @@ class TLB(val SIZE_LOG2: Int) extends Module {
     //          It makes writing delay a cycle.
     entries(id).valid := true.B
     entries(id).vpn := io.modify.vpn
-    entries(id).ppn := io.modify.ppn
+    entries(id).pte := io.modify.pte
   }
 
   // - remove
