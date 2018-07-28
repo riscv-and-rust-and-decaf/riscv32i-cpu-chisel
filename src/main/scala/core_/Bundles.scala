@@ -63,8 +63,12 @@ class MEM_MMU extends RAMOp {
 //  val invalidate_addr = Output(Valid(UInt(32.W)))
 }
 
-class CSR_MMU extends RAMOp {
-  val satp = Input(UInt(32.W))
+class CSR_MMU extends Bundle {
+  val satp  = Output(UInt(32.W))
+  val flush = Output(Valid(UInt(32.W)))
+  val priv  = Output(UInt(2.W)) // current privilege mode
+  val mxr   = Output(Bool())    // Make eXecutable Readable
+  val sum   = Output(Bool())    // Supervisor User Memory access
 }
 
 // represents an operation of "reading registers"

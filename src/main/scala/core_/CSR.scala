@@ -8,18 +8,13 @@ class CSR extends Module {
   val io = IO(new Bundle {
     val id  = Flipped(new ID_CSR)
     val mem = Flipped(new MEM_CSR)
+    val mmu = new CSR_MMU
 
     val flush      = Output(Bool())
     val csrExcepPc = Output(UInt(32.W))
   })
 
-  object PRV {
-    val U = 0.U(2.W)
-    val S = 1.U(2.W)
-    val M = 3.U(2.W)
-  }
-
-  val prv = RegInit(PRV.M)
+  val priv = RegInit(Priv.M)
 
   object ADDR {
     // M Info
@@ -41,7 +36,24 @@ class CSR extends Module {
     val mcause    = "h342".U
     val mtval     = "h343".U
     val mip       = "h344".U
+    //S Trap Setup
+    val sstatus   = "h100".U
+    val sedeleg   = "h102".U
+    val sideleg   = "h103".U
+    val sie       = "h104".U
+    val stvec     = "h105".U
+    val scounteren= "h106".U
+    //S Trap Hangding
+    val sscratch  = "h140".U
+    val sepc      = "h141".U
+    val scause    = "h142".U
+    val stval     = "h143".U
+    val sip       = "h144".U
+    // S Protection and Translation
+    val satp      = "h180".U
   }
+
+  val csr = Mem(0x400, UInt(32.W))
 
   // read-only m info
   val mvendorid = 2333.U(32.W)
@@ -49,57 +61,15 @@ class CSR extends Module {
   val mimpid    = 2333.U(32.W)
   val mhartid   = 0.U(32.W)
 
-  // read-write m Trap Setup
-  val mstatus = RegInit(0.U(32.W))
-  val misa = RegInit(0.U(32.W))
-  val medeleg = RegInit(0.U(32.W))
-  val mideleg = RegInit(0.U(32.W))
-  val mie = RegInit(0.U(32.W))
-  val mtvec = RegInit(0.U(32.W))
-  val mcounteren = RegInit(0.U(32.W))
-
-  // read-write m Trap Handling
-  val mscratch = RegInit(0.U(32.W))
-  val mepc = RegInit(0.U(32.W))
-  val mcause = RegInit(0.U(32.W))
-  val mtval = RegInit(0.U(32.W))
-  val mip = RegInit(0.U(32.W))
-
-  io.id.rdata := MuxLookup(io.id.addr, 0.U, Seq(
+  io.id.rdata := MuxLookup(io.id.addr, csr(io.id.addr), Seq(
     ADDR.mvendorid -> mvendorid,
     ADDR.marchid -> marchid,
     ADDR.mimpid -> mimpid,
-    ADDR.mhartid -> mhartid,
-    ADDR.mstatus -> mstatus,
-    ADDR.misa -> misa,
-    ADDR.medeleg -> medeleg,
-    ADDR.mideleg -> mideleg,
-    ADDR.mie -> mie,
-    ADDR.mtvec -> mtvec,
-    ADDR.mcounteren -> mcounteren,
-    ADDR.mscratch -> mscratch,
-    ADDR.mepc -> mepc,
-    ADDR.mcause -> mcause,
-    ADDR.mtval -> mtval,
-    ADDR.mip -> mip
+    ADDR.mhartid -> mhartid
   ))
 
-  val csrVal = io.mem.wrCSROp.newVal
-  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP) {
-    switch(io.mem.wrCSROp.addr) {
-      is(ADDR.mstatus) {mstatus := csrVal}
-      is(ADDR.misa) {misa := csrVal}
-      is(ADDR.medeleg) {medeleg := csrVal}
-      is(ADDR.mideleg) {mideleg := csrVal}
-      is(ADDR.mie) {mie := csrVal}
-      is(ADDR.mtvec) {mtvec := csrVal}
-      is(ADDR.mcounteren) {mcounteren := csrVal}
-      is(ADDR.mscratch) {mscratch := csrVal}
-      is(ADDR.mepc) {mepc := csrVal}
-      is(ADDR.mcause) {mcause := csrVal}
-      is(ADDR.mtval) {mtval := csrVal}
-      is(ADDR.mip) {mip := csrVal}
-    }
+  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP && io.mem.wrCSROp.addr < 0x400.U) {
+    csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
   }
 
   val pc = Wire(UInt(32.W))
@@ -109,21 +79,29 @@ class CSR extends Module {
   excep := io.mem.excep.valid
 
   when(io.mem.excep.valid) {
-    mepc   := io.mem.excep.pc
-    mcause := Mux(io.mem.excep.code === Cause.ECallU,
-      io.mem.excep.code + prv,
+    csr(ADDR.mepc)   := io.mem.excep.pc
+    csr(ADDR.mcause) := Mux(io.mem.excep.code === Cause.ECallU,
+      io.mem.excep.code + priv,
       io.mem.excep.code)
   }
 
+  val mtvec = csr(ADDR.mtvec)
   val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
   pc := Mux(mtvec(1,0) === 0.U,
     pcA4,
-    pcA4 + 4.U * mcause
-    )
+    pcA4 + 4.U * csr(ADDR.mcause)
+  )
 
   io.csrExcepPc := pc
   io.flush := excep
 
+  //------------------- MMU ----------------------
+  io.mmu.satp := csr(ADDR.satp)
+  io.mmu.sum := csr(ADDR.mstatus)(18)
+  io.mmu.mxr := csr(ADDR.mstatus)(19)
+  io.mmu.flush.valid := false.B // TODO
+  io.mmu.flush.bits := 0.U
+  io.mmu.priv := priv
 }
 
 

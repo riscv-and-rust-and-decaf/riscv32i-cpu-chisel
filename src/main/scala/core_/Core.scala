@@ -41,12 +41,11 @@ class Core extends Module {
   id.io.exWrCSROp  <> ex.io.mem.wrCSROp
   id.io.memWrCSROp <> mem.io.csr.wrCSROp
 
-  // IF / MEM -> MMU
+  // IF / MEM -> MMU <-> CSR / out
   iff.io.mmu       <> mmu.io.iff
   mem.io.mmu       <> mmu.io.mem
-
-  // MMU -> out
-  mmu.io.dev <> io.dev
+  mmu.io.dev       <> io.dev
+  mmu.io.csr       <> csr.io.mmu
 
   //flush of exceptions
   iff.io.id.branch.valid := csr.io.flush | id.io.iff.branch.valid

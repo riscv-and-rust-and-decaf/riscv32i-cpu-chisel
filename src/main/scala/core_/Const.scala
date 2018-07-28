@@ -122,6 +122,11 @@ object InstType {
   val SYS = 7.U(3.W) // CSR or ECALL
 }
 
+object Priv {
+  val M = 3.U(2.W)
+  val S = 1.U(2.W)
+  val U = 0.U(2.W)
+}
 
 
 object DecTable {

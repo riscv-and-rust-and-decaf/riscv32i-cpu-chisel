@@ -7,6 +7,7 @@ class MMU extends Module {
   val io = IO(new Bundle {
     val iff = Flipped(new IF_MMU())
     val mem = Flipped(new MEM_MMU())
+    val csr = Flipped(new CSR_MMU())
 
     val dev = new Core_IO
   })
