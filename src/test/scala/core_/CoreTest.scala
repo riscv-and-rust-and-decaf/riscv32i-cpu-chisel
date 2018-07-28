@@ -211,6 +211,13 @@ class ECALLTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   expect(c.d.reg(30), 30)
 }
 
+class ERETest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+  step(100)
+  expect(c.d.reg(1), 5)
+  expect(c.d.reg(30), 7)
+
+}
+
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv") // output .vcd wave file
   "Core module fwno" should "pass test" in {
@@ -258,16 +265,14 @@ class CoreECALLTester extends ChiselFlatSpec {
   }
 }
 
-//class CoreAsmTester extends ChiselFlatSpec {
-//  val args = Array[String]("-fiwv")
-//  "Run hello" should "pass test" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-//      c => new CoreTest(c, "monitor.bin") {
-//        step(100000)
-//      }
-//    } should be (true)
-//  }
-//}
+class CoreERETTester extends ChiselFlatSpec {
+  val args = Array[String]("-fiwv")
+  "Core eret test" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new ERETest(c, "test_asm/test_ret.bin")
+    }
+  }
+}
 
 // runMain core_.Repl
 object Repl extends App {
