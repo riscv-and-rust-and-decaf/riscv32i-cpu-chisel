@@ -43,24 +43,16 @@ object PTE {
 /// Translate VPN to PPN by reading page table at memory
 class PTW extends Module {
   val io = IO(new Bundle {
-    val set_root = Input(Valid(new PN()))
-    val req = DeqIO(new PN()) // Request
-    val rsp = EnqIO(Valid(new PTE())) // Response
+    val root = Input(new PN())
+    val req  = DeqIO(new PN()) // Request
+    val rsp = EnqIO(new PTE()) // Response
     val mem = new RAMOp() // Memory access
   })
 
   val sIdle :: sWait2 :: sWait1 :: Nil = Enum(3)
+  val status = RegInit(sIdle)
 
-  val status   = RegInit(sIdle)
-  val root_ppn = RegInit(PN.ZERO)
-
-  val pte      = io.mem.rdata.asTypeOf(new PTE)
-
-  // Reset root PPN
-  when(io.set_root.valid) {
-    root_ppn := io.set_root.bits
-    status := sIdle
-  }
+  val pte = io.mem.rdata.asTypeOf(new PTE)
 
   io.req.ready := status === sIdle
 
@@ -69,15 +61,14 @@ class PTW extends Module {
   io.mem.addr := 0.U
   io.mem.wdata := 0.U
   io.rsp.valid := false.B
-  io.rsp.bits.valid := false.B
-  io.rsp.bits.bits := PTE.ZERO
+  io.rsp.bits := PTE.ZERO
 
   switch(status) {
     is(sIdle) {
       when(io.req.valid) {
         // Memory access for P2
         io.mem.mode := RAMMode.LW
-        io.mem.addr := root_ppn.toAddr(io.req.bits.p2 << 2.U)
+        io.mem.addr := io.root.toAddr(io.req.bits.p2 << 2.U)
         status := sWait2
       }
     }
@@ -86,14 +77,13 @@ class PTW extends Module {
         // Check PTE
         when(!pte.V) { // error, response
           io.rsp.valid := true.B
-          io.rsp.bits.valid := false.B
           when(io.rsp.ready) { // ack
             status := sIdle
           }
         }.elsewhen(!pte.isPDE) { // Response huge page
           io.rsp.valid := true.B
-          io.rsp.bits.valid := !pte.ppn.p1.orR // Test error? : Not 4M aligned
-          io.rsp.bits.bits := pte
+          io.rsp.bits := pte
+          io.rsp.bits.V := !pte.ppn.p1.orR // Test error? : Not 4M aligned
           when(io.rsp.ready) { // ack
             status := sIdle
           }
@@ -108,8 +98,8 @@ class PTW extends Module {
     is(sWait1) {
       when(io.mem.ok) { // Response
         io.rsp.valid := true.B
-        io.rsp.bits.valid := pte.isLeaf
-        io.rsp.bits.bits := pte
+        io.rsp.bits := pte
+        io.rsp.bits.V := pte.isLeaf
         when(io.rsp.ready) { // ack
           status := sIdle
         }

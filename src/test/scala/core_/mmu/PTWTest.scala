@@ -10,15 +10,15 @@ class PTWTestModule() extends Module {
   val io = IO(new Bundle {
     val ready    = Input(Bool())
     val ram_init = Flipped(new RAMOp())
-    val set_root = Input(Valid(new PN()))
+    val root     = Input(new PN())
     val req      = DeqIO(new PN())
-    val rsp      = EnqIO(Valid(new PTE()))
+    val rsp      = EnqIO(new PTE())
   })
 
   val ptw = Module(new PTW)
   val ram = Module(new MockRam())
 
-  ptw.io.set_root <> io.set_root
+  ptw.io.root <> io.root
   ptw.io.req <> io.req
   ptw.io.rsp <> io.rsp
   ptw.reset := !io.ready
@@ -38,18 +38,13 @@ class PTWTest(m: PTWTestModule) extends PeekPokeTester(m) {
 
   reset()
   // Init
-  poke(m.io.set_root.valid, false)
   poke(m.io.req.valid, false)
   poke(m.io.rsp.ready, true)
+  poke(m.io.root.p2, 0)
+  poke(m.io.root.p1, 0)
 
   TestUtil.loadRAM(this, m.io.ready, m.io.ram_init, memData)
-
-  // Set root ppn = 0
-  poke(m.io.set_root.valid, true)
-  poke(m.io.set_root.bits.p2, 0)
-  poke(m.io.set_root.bits.p1, 0)
   step(1)
-  poke(m.io.set_root.valid, false)
 
   def check(vpn: Long, ppn: Option[Long]): Unit = {
     print("Testing %05x -> %s\n".format(vpn, if(ppn.isDefined) "%05x".format(ppn.get) else "None" ))
@@ -63,10 +58,10 @@ class PTWTest(m: PTWTestModule) extends PeekPokeTester(m) {
     // Response
     while(peek(m.io.rsp.valid) != 1)
       step(1)
-    expect(m.io.rsp.bits.valid, ppn.isDefined)
+    expect(m.io.rsp.bits.V, ppn.isDefined)
     if(ppn.isDefined) {
-      expect(m.io.rsp.bits.bits.ppn.p2, (ppn.get >> 10) & 0x3ff)
-      expect(m.io.rsp.bits.bits.ppn.p1, ppn.get & 0x3ff)
+      expect(m.io.rsp.bits.ppn.p2, (ppn.get >> 10) & 0x3ff)
+      expect(m.io.rsp.bits.ppn.p1, ppn.get & 0x3ff)
     }
     step(1)
   }
