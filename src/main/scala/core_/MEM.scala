@@ -11,6 +11,7 @@ class MEM extends Module {
     val wrRegOp   = new WrRegOp
     val wrCSROp   = new WrCSROp
 
+    val xRet      = Output(Valid(UInt(2.W)))
     //exception
     val exExcep = Flipped(new ExcepStatus)
     val excep  = new ExcepStatus // to CSR
@@ -18,13 +19,6 @@ class MEM extends Module {
     val csrFlush = Input(Bool())
   })
   
-  val excepEn = RegInit(false.B)
-  val excepCode = RegInit(0.U(32.W))
-  val excepPc  = RegInit(0.U(32.W))
-  excepEn   := io.exExcep.en
-  excepCode := io.exExcep.code
-  excepPc   := io.exExcep.pc
-
   // Lock input
   val ramOp       = RegInit(0.U.asTypeOf(new RAMOp_Output))
   val wregAddr    = RegInit(0.U(32.W))
@@ -58,23 +52,44 @@ class MEM extends Module {
   }
   io.wrCSROp := wrCSROp
 
+  val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
+  when(!stall) {
+    xRet := io.ex.xRet
+  }
+  io.xRet := xRet
+  
+  val excep = RegInit(0.U.asTypeOf(new ExcepStatus))
+  when(!stall) {
+    excep := io.exExcep
+  }
+  io.excep :=excep
+  /*
+  val excepEn = RegInit(false.B)
+  val excepCode = RegInit(0.U(32.W))
+  val excepPc  = RegInit(0.U(32.W))
+  excepEn   := io.exExcep.en
+  excepCode := io.exExcep.code
+  excepPc   := io.exExcep.pc
+  */
+
   when(io.csrFlush) {
-    excepEn := false.B
+    excep.en := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
     ramOp.mode := RAMMode.NOP 
-    printf("! exception come, flushed (0x%x)\n", excepPc);
+    printf("! exception come, flushed (0x%x)\n", excep.pc);
   }
-  when(excepEn) {
+  when(excep.en) {
     io.wrRegOp.addr := 0.U
     io.wrCSROp.mode := CSRMODE.NOP
     io.mmu.mode := RAMMode.NOP
-    printf("! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn);
+    printf("! Exception Pc: 0x%x ExcepCode: %d\n", excep.pc, excep.code);
   }
 
   //printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
+/*
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc
-
+*/
 }

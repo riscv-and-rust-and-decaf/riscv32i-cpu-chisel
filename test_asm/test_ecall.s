@@ -12,7 +12,8 @@ trap_vector:
 reset_vector:
 	auipc x7, 0     
 	addi x7, x7, -12 
-	csrw mtvec, x7  
+	csrw mtvec, x7 
+	csrrsi x0,mstatus, 15
 	ecall           
 	li x1, 9        
 	li x1, 8        

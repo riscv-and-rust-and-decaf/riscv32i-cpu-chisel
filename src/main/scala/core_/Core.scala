@@ -45,6 +45,7 @@ class Core extends Module {
   mem.io.wrRegOp <> reg.io.mem
   mem.io.wrCSROp <> csr.io.mem
   mem.io.excep   <> csr.io.memExcep
+  csr.io.memXRet := mem.io.xRet
 
   mmu.io.dev <> io.dev
 

@@ -138,6 +138,9 @@ class ID extends Module {
     io.ex.wrCSROp.rsVal := 0.U
     io.ex.wrCSROp.newVal := 0.U
 
+    io.ex.xRet.valid := false.B
+    io.ex.xRet.bits := 0.U
+
     imm := 0.S
 
     // deal with different kind inst
@@ -235,21 +238,21 @@ class ID extends Module {
               wregAddr := rdAddr
             }
             .otherwise {
-                val inst_pre = inst(31,7)
-                switch(inst_pre) {
-                  is(SYS_INST.ECALL) {
+                val inst_p2 = inst(24,20)
+                switch(inst_p2) {
+                  is(SYS_INST_P2.ECALL) {
                     when(!excepEn) {
                       io.excep.en := true.B
                       io.excep.code := 8.U
                     }
                   }
-                  is(SYS_INST.EBREAK) {
+                  is(SYS_INST_P2.EBREAK) {
+                    //TODO
                   }
-                  is(SYS_INST.URET) {
-                  }
-                  is(SYS_INST.SRET) {
-                  }
-                  is(SYS_INST.MRET) {
+                  is(SYS_INST_P2.xRET) {
+                    io.ex.xRet.valid := true.B
+                    io.ex.xRet.bits := inst(29,28)
+
                   }
                 }
 

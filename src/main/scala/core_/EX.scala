@@ -90,6 +90,10 @@ class EX extends Module {
     CSRMODE.RC -> (wrCSROp.oldVal & ~wrCSROp.rsVal)
   ))
 
+  val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
+  xRet := io.id.xRet
+  io.mem.xRet := xRet
+
   io.excep.en   := excepEn
   io.excep.code := excepCode
   io.excep.pc   := excepPc
