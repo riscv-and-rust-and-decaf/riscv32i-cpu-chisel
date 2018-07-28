@@ -7,7 +7,7 @@ import core_._
 class MockSerial(printLog: Boolean = true) extends Module {
   val io = IO(Flipped(new RAMOp))
 
-  val inputs_raw = "E 0x10000\n0x02a00593\n0x10000737\n0x00574783\n0x0207f793\n0x00079463\n0x0000006f\n0x00b70023\n0x00008067\n\nJ 0x10000\n"
+  val inputs_raw = "E 0x80010000\n0x02a00593\n0x10000737\n0x00574783\n0x0207f793\n0x00079463\n0x0000006f\n0x00b70023\n0x00008067\n\nJ 0x80010000\n"
 
   val inputs = VecInit(inputs_raw.map(x => x.U(8.W)))
   val next_input_num = RegInit(0.U(32.W))

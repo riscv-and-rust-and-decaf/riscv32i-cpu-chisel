@@ -6,17 +6,12 @@ import chisel3.util._
 class MEM extends Module {
   val io = IO(new Bundle {
     val ex  = Flipped(new EX_MEM)
-    val mmu = new RAMOp
+    val mmu = new MEM_MMU
+    val csr = new MEM_CSR
    
     val wrRegOp   = new WrRegOp
-    val wrCSROp   = new WrCSROp
 
-    val xRet      = Output(Valid(UInt(2.W)))
-    //exception
-    val exExcep = Flipped(new ExcepStatus)
-    val excep  = new ExcepStatus // to CSR
-
-    val csrFlush = Input(Bool())
+    val flush = Input(Bool())
   })
   
   // Lock input
@@ -50,46 +45,33 @@ class MEM extends Module {
   when(!stall) {
     wrCSROp := io.ex.wrCSROp
   }
-  io.wrCSROp := wrCSROp
+  io.csr.wrCSROp := wrCSROp
 
   val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
   when(!stall) {
     xRet := io.ex.xRet
   }
-  io.xRet := xRet
+  io.csr.xRet := xRet
   
-  val excep = RegInit(0.U.asTypeOf(new ExcepStatus))
+  val excep = RegInit(0.U.asTypeOf(new Exception))
   when(!stall) {
-    excep := io.exExcep
+    excep := io.ex.excep
   }
-  io.excep :=excep
-  /*
-  val excepEn = RegInit(false.B)
-  val excepCode = RegInit(0.U(32.W))
-  val excepPc  = RegInit(0.U(32.W))
-  excepEn   := io.exExcep.en
-  excepCode := io.exExcep.code
-  excepPc   := io.exExcep.pc
-  */
+  io.csr.excep :=excep
 
-  when(io.csrFlush) {
-    excep.en := false.B
+  when(io.flush) {
+    excep.valid := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
-    ramOp.mode := RAMMode.NOP 
-    printf("! exception come, flushed (0x%x)\n", excep.pc);
+    ramOp.mode := RAMMode.NOP
+    //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
   }
-  when(excep.en) {
+  when(excep.valid) {
     io.wrRegOp.addr := 0.U
-    io.wrCSROp.mode := CSRMODE.NOP
+    io.csr.wrCSROp.mode := CSRMODE.NOP
     io.mmu.mode := RAMMode.NOP
-    printf("! Exception Pc: 0x%x ExcepCode: %d\n", excep.pc, excep.code);
+    //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
   }
 
-  //printf("Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data);
-/*
-  io.excep.en   := excepEn
-  io.excep.code := excepCode
-  io.excep.pc   := excepPc
-*/
+  //printf("[MEM] Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data)
 }

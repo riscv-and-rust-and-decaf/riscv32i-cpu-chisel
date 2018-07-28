@@ -109,18 +109,6 @@ class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname
 }
 
 class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-//  step(4)
-//  expect(c.d.ifpc, 16)
-//  expect(c.d.reg(10), 10)
-//  step(1)
-//  expect(c.d.ifpc, 20)
-//  expect(c.d.ifinst, "h_fea09ce3".U)
-//  step(1)
-//  expect(c.d.id.pc, 20)
-//  expect(c.d.id.imm, -8)
-//  expect(c.d.id_branch, 12)
-
-  // Just check the result
   step(90)
   expect(c.d.reg(7), 55)
   step(200)
@@ -132,30 +120,6 @@ class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname)
 }
 
 class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-//  step(4)
-//  expect(c.d.ifpc, 16)
-//  expect(c.d.reg(1), "h_87654000".U)
-//  step(1)
-//  expect(c.d.ifpc, 20)
-//  expect(c.d.reg(1), "h_87654000".U)
-//  expect(c.d.reg(2), "h_1".U)
-//  step(1)
-//  expect(c.d.ifpc, 24) // now the fourth inst (store) is in MEM
-//  expect(c.d.reg(1), "h_87654321".U)
-//  expect(c.d.reg(2), "h_1".U)
-//  step(1)
-//  expect(c.d.ifpc, 24) // not advancing because of the store inst
-//  expect(c.d.reg(1), "h_87654321".U)
-//  expect(c.d.reg(2), "h_1".U)
-//  step(1)
-//  expect(c.d.ifpc, 24) // not advancing because of the load inst
-//  expect(c.d.reg(1), "h_87654321".U)
-//  expect(c.d.reg(2), "h_87654321".U)
-//  step(1)
-//  expect(c.d.ifpc, 28) // now advancing
-//  expect(c.d.reg(1), "h_87654321".U)
-//  expect(c.d.reg(2), "h_87654321".U)
-
   // Just check the result
   step(125)
   expect(c.d.reg(1), "h_87654321".U)
@@ -195,28 +159,6 @@ class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   expect(c.d.ifpc, 0x34)
 }
 
-class CSRInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(17)
-  expect(c.d.reg(2), 13)
-  expect(c.d.reg(3), 11)
-  expect(c.d.reg(4), 8)
-  expect(c.d.reg(5), 10)
-}
-
-class ECALLTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(100)
-  expect(c.d.reg(1), 13)
-  expect(c.d.reg(8), 8)
-  expect(c.d.reg(20), 11)
-  expect(c.d.reg(30), 30)
-}
-
-class ERETest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(100)
-  expect(c.d.reg(1), 5)
-  expect(c.d.reg(30), 7)
-
-}
 
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv") // output .vcd wave file
@@ -240,39 +182,8 @@ class CoreTester extends ChiselFlatSpec {
       c => new LoadStoreInstTest(c, "test_asm/test5.bin")
     } should be (true)
   }
-//  "Core test 6" should "pass test" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-//      c => new CoreTest6(c, "test_asm/test6.bin")
-//    } should be (true)
-//  }
 }
 
-class CoreCSRTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
-  "Core simple csr test" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CSRInstTest(c, "test_asm/test_csr.bin")
-    } should be (true)
-  }
-}
-
-class CoreECALLTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
-  "Core ecall test" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new ECALLTest(c, "test_asm/test_ecall.bin")
-    } should be (true)
-  }
-}
-
-class CoreERETTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
-  "Core eret test" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new ERETest(c, "test_asm/test_ret.bin")
-    }
-  }
-}
 
 // runMain core_.Repl
 object Repl extends App {

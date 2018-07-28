@@ -7,12 +7,9 @@ class CSR extends Module {
 
   val io = IO(new Bundle {
     val id  = Flipped(new ID_CSR)
-    val mem = Flipped(new WrCSROp)
+    val mem = Flipped(new MEM_CSR)
 
-    val memExcep = Flipped(new ExcepStatus)
-    val memXRet  = Input(Valid(UInt(2.W)))
-
-    val csrFlush = Output(Bool())
+    val flush = Output(Bool())
     val csrNewPc = Output(UInt(32.W))
   })
 
@@ -130,24 +127,25 @@ class CSR extends Module {
     ADDR.ucause -> ucause
   ))
 
-  when(io.mem.mode =/= CSRMODE.NOP) {
-    switch(io.mem.addr) {
-      is(ADDR.mstatus) {mstatus := io.mem.newVal.asTypeOf(new MStatus)}
-      is(ADDR.misa) {misa := io.mem.newVal}
-      is(ADDR.medeleg) {medeleg := io.mem.newVal}
-      is(ADDR.mideleg) {mideleg := io.mem.newVal}
-      is(ADDR.mie) {mie := io.mem.newVal}
-      is(ADDR.mtvec) {mtvec := io.mem.newVal}
-      is(ADDR.mcounteren) {mcounteren := io.mem.newVal}
-      is(ADDR.mscratch) {mscratch := io.mem.newVal}
-      is(ADDR.mepc) {mepc := io.mem.newVal}
-      is(ADDR.mcause) {mcause := io.mem.newVal}
-      is(ADDR.mtval) {mtval := io.mem.newVal}
-      is(ADDR.mip) {mip := io.mem.newVal}
-      is(ADDR.sepc) {sepc := io.mem.newVal}
-      is(ADDR.scause) {scause := io.mem.newVal}
-      is(ADDR.uepc) {uepc := io.mem.newVal}
-      is(ADDR.ucause) {ucause := io.mem.newVal}
+  val csrVal = io.mem.wrCSROp.newVal
+  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP) {
+    switch(io.mem.wrCSROp.addr) {
+      is(ADDR.mstatus) {mstatus := csrVal.asTypeOf(new MStatus)}
+      is(ADDR.misa) {misa := csrVal}
+      is(ADDR.medeleg) {medeleg := csrVal}
+      is(ADDR.mideleg) {mideleg := csrVal}
+      is(ADDR.mie) {mie := csrVal}
+      is(ADDR.mtvec) {mtvec := csrVal}
+      is(ADDR.mcounteren) {mcounteren := csrVal}
+      is(ADDR.mscratch) {mscratch := csrVal}
+      is(ADDR.mepc) {mepc := csrVal}
+      is(ADDR.mcause) {mcause := csrVal}
+      is(ADDR.mtval) {mtval := csrVal}
+      is(ADDR.mip) {mip := csrVal}
+      is(ADDR.sepc) {sepc := csrVal}
+      is(ADDR.scause) {scause := csrVal}
+      is(ADDR.uepc) {uepc := csrVal}
+      is(ADDR.ucause) {ucause := csrVal}
 
     }
   }
@@ -168,13 +166,13 @@ class CSR extends Module {
     PRV.U  -> mstatus.UIE
     ))
 
-  when(io.memExcep.en && ( newMode > prv || (newMode === prv && ie))) {
+  when(io.mem.excep.valid && ( newMode > prv || (newMode === prv && ie))) {
     excep  := true.B 
     
-    val cause = Mux(io.memExcep.code === 8.U,
-      io.memExcep.code + prv, 
-      io.memExcep.code)
-    val ePc = io.memExcep.pc + 4.U //TODO: May not +4
+    val cause = Mux(io.mem.excep.code === 8.U,
+      io.mem.excep.code + prv, 
+      io.mem.excep.code)
+    val ePc = io.mem.excep.pc + 4.U //TODO: May not +4
     
     switch(newMode) {
       is(PRV.M) {
@@ -195,9 +193,9 @@ class CSR extends Module {
     prv := newMode 
     
   }
-  .elsewhen(io.memXRet.valid && (io.memXRet.bits <= prv)) {
+  .elsewhen(io.mem.xRet.valid && (io.mem.xRet.bits <= prv)) {
     xRet := true.B
-    val x = io.memXRet.bits
+    val x = io.mem.xRet.bits
     xRet_x := x
     // prv<- xPP
     // xIE <- xPIE
@@ -228,10 +226,10 @@ class CSR extends Module {
 
 
   io.csrNewPc := 0.U
-  io.csrFlush := false.B
+  io.flush := false.B
 
   when(excep) {
-    io.csrFlush := true.B
+    io.flush := true.B
     val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
     io.csrNewPc := Mux(mtvec(1,0) === 0.U,
       pcA4,
@@ -240,7 +238,7 @@ class CSR extends Module {
   }
   .elsewhen(xRet) {
     printf("xRet");
-    io.csrFlush := true.B
+    io.flush := true.B
     io.csrNewPc := MuxLookup(xRet_x, 0.U , Seq(
       PRV.M -> mepc,
       PRV.S -> sepc,

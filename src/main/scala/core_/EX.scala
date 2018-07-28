@@ -9,21 +9,14 @@ class EX extends Module {
     val id  = Flipped(new ID_EX)
     val mem = new EX_MEM
 
-    //exception
-    val idExcep = Flipped(new ExcepStatus)
-    val excep  = new ExcepStatus
-
-    val csrFlush = Input(Bool())
+    val flush = Input(Bool())
   })
-  
-  val excepEn = RegInit(false.B)
-  val excepCode = RegInit(0.U(32.W))
-  val excepPc = RegInit(0.U(32.W))
-  excepEn   := io.idExcep.en
-  excepCode := io.idExcep.code
-  excepPc   := io.idExcep.pc 
 
-  val flush = io.csrFlush
+  val excep = RegInit(0.U.asTypeOf(new Exception))
+  excep := io.id.excep
+  io.mem.excep := excep
+
+  val flush = io.flush
 
   // Stall
   io.id.ready := io.mem.ready
@@ -93,17 +86,12 @@ class EX extends Module {
   val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
   xRet := io.id.xRet
   io.mem.xRet := xRet
-
-  io.excep.en   := excepEn
-  io.excep.code := excepCode
-  io.excep.pc   := excepPc
   
   when(flush) {
     opt := OptCode.ADD
     wregAddr := 0.U
     wrCSROp.mode := 0.U
-    excepEn := false.B
-    
+    excep.valid := false.B
   }
 
 }

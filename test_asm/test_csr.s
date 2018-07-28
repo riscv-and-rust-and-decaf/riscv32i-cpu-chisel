@@ -1,3 +1,4 @@
+.global _start
 _start:
 	li x1,13
 	csrw mtvec,x1

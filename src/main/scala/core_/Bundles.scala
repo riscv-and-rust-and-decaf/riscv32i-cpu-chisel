@@ -53,6 +53,20 @@ class RAMOp extends RAMOp_Output {
   val ok    = Input(Bool())
 }
 
+class IF_MMU extends RAMOp {
+  val instPageFault = Input(Bool())
+}
+
+class MEM_MMU extends RAMOp {
+  val loadPageFault = Input(Bool())
+  val storePageFault = Input(Bool())
+//  val invalidate_addr = Output(Valid(UInt(32.W)))
+}
+
+class CSR_MMU extends RAMOp {
+  val satp = Input(UInt(32.W))
+}
+
 // represents an operation of "reading registers"
 class RdRegOp extends Bundle {
   val addr = Output(UInt(5.W))
@@ -63,6 +77,7 @@ class IF_ID extends Bundle {
   val pc     = Output(UInt(32.W))
   val inst   = Output(UInt(32.W))
   val branch = Input(Valid(UInt(32.W)))
+  val excep  = new Exception
   val ready  = Input(Bool())
 }
 
@@ -79,6 +94,7 @@ class ID_EX_Output extends Bundle {
   val wrCSROp    = Output(new WrCSROp)
   val xRet       = Output(Valid(UInt(2.W)))
   var store_data = Output(UInt(32.W)) // for Store Inst only
+  val excep      = new Exception
 }
 
 class ID_EX extends ID_EX_Output {
@@ -91,15 +107,22 @@ class EX_MEM extends Bundle {
   val wrCSROp = Output(new WrCSROp)
   val xRet    = Output(Valid(UInt(2.W)))
   var ready   = Input(Bool())
+  val excep      = new Exception
+}
+
+class MEM_CSR extends Bundle {
+  val wrCSROp = new WrCSROp
+  val excep   = new Exception
+  val xRet    = Output(Valid(UInt(2.W)))
 }
 
 class ID_CSR extends Bundle {
   val addr  = Output(UInt(12.W))
-  val rdata = Input(UInt(32.W)) 
+  val rdata = Input(UInt(32.W))
 }
 
-class ExcepStatus extends Bundle {
-  val en   = Output(Bool())
-  val code = Output(UInt(32.W))
-  val pc   = Output(UInt(32.W))
+class Exception extends Bundle {
+  val valid = Output(Bool())
+  val code  = Output(UInt(32.W))
+  val pc    = Output(UInt(32.W))
 }

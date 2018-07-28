@@ -7,8 +7,8 @@ import Const._
 import OptCode._
 
 class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
-  poke(mem.io.exExcep.en, false.B)
-  poke(mem.io.csrFlush, false.B)
+  poke(mem.io.ex.excep.valid, false.B)
+  poke(mem.io.flush, false.B)
   
   // No IO
   poke(mem.io.ex.ramOp.mode, RAMMode.NOP)

@@ -1,11 +1,12 @@
-package core_
+package core_.mmu
 
 import chisel3._
 import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
 import chisel3.util._
+import core_.{RAMOp, TestUtil}
 import devices.MockRam
 
-class PageTableWalkerTestModule() extends Module {
+class PTWTestModule() extends Module {
   val io = IO(new Bundle {
     val ready    = Input(Bool())
     val ram_init = Flipped(new RAMOp())
@@ -14,7 +15,7 @@ class PageTableWalkerTestModule() extends Module {
     val rsp      = EnqIO(Valid(new PTE()))
   })
 
-  val ptw = Module(new PageTableWalker)
+  val ptw = Module(new PTW)
   val ram = Module(new MockRam())
 
   ptw.io.set_root <> io.set_root
@@ -24,7 +25,7 @@ class PageTableWalkerTestModule() extends Module {
   TestUtil.bindRAM(io.ready, io.ram_init, ptw.io.mem, ram.io)
 }
 
-class PageTableWalkerTest(m: PageTableWalkerTestModule) extends PeekPokeTester(m) {
+class PTWTest(m: PTWTestModule) extends PeekPokeTester(m) {
   private val memData = (new PageTableMemBuilder)
     .setPTE(0, 0x3ff, PTE_.make(0, PTE_.V))         // Map [0x3ff] to root as PDE
     .setPTE(0, 0x3fe, PTE_.make(0, PTE_.VRW))       // Map [0x3fe] to root as PTE
@@ -102,11 +103,11 @@ class PageTableMemBuilder {
   }
 }
 
-class PageTableWalkerTester extends ChiselFlatSpec {
+class PTWTester extends ChiselFlatSpec {
   val args = Array[String]()
   "PageTableWalker module" should "pass test" in {
-    iotesters.Driver.execute(args, () => new PageTableWalkerTestModule()) {
-      c => new PageTableWalkerTest(c)
+    iotesters.Driver.execute(args, () => new PTWTestModule()) {
+      c => new PTWTest(c)
     } should be(true)
   }
 }
