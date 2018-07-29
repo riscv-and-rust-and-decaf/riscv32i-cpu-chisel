@@ -114,14 +114,14 @@ class CSR extends Module {
     ADDR.mstatus -> mstatus.asUInt
   ))
 
-  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP) {
+  when(io.mem.wrCSROp.valid) {
     for(i <- csr_ids) {
       when(i === io.mem.wrCSROp.addr) {
-        csr(i) := io.mem.wrCSROp.newVal
+        csr(i) := io.mem.wrCSROp.data
       }
     }
     when(io.mem.wrCSROp.addr === ADDR.mstatus) {
-      mstatus := io.mem.wrCSROp.newVal.asTypeOf(new MStatus)
+      mstatus := io.mem.wrCSROp.data.asTypeOf(new MStatus)
     }
   }
 

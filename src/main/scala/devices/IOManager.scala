@@ -122,7 +122,7 @@ class IOManager extends Module {
       }
     }.otherwise {
       printf("[IO] MEM access invalid address: %x\n", mem.addr)
-      stop(1)
+//      stop(1)
     }
   }
 
@@ -138,7 +138,7 @@ class IOManager extends Module {
       if_.ok := false.B
     }.otherwise {
       printf("[IO] IF access invalid address: %x\n", if_.addr)
-      stop(1)
+//      stop(1)
     }
   }
 }

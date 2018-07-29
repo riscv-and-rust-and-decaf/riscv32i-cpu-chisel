@@ -16,9 +16,9 @@ class IDTest(t: ID) extends PeekPokeTester(t) {
   poke(t.io.reg.read2.data,8)
   step(1)
 
-  expect(t.io.ex.oprd1, 7)
-  expect(t.io.ex.oprd2, "h_ffff_fffe".U)
-  expect(t.io.ex.opt, OptCode.SLT)
+  expect(t.io.ex.aluOp.rd1, 7)
+  expect(t.io.ex.aluOp.rd2, "h_ffff_fffe".U)
+  expect(t.io.ex.aluOp.opt, OptCode.SLT)
 
   poke(t.io.iff.inst, "h_fea0_9ce3".U)
   // 1111_1110_1010_0000_1001_1100_1110_0011

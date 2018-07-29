@@ -48,6 +48,10 @@ class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
 // x31 = 0xdead000 : Fail. reason = (char*)a0
 // x31 = 0xcafe000 : Pass
 class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTest(c, fname) {
+  import java.io._
+  val traceFile = new PrintWriter(new File(fname + ".run"))
+  var lastPC = 0L
+
   import scala.util.control.Breaks
   val loop = new Breaks
   var cycle = 0
@@ -70,8 +74,16 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
       }
       step(1)
       cycle += 1
+      // print PC
+      if(peek(c.d.finish_pc.valid) == 1) {
+        val pc = peek(c.d.finish_pc.bits).toLong
+        if(pc != lastPC)
+          traceFile.println("%08x".format(pc))
+        lastPC = pc
+      }
     }
   }
+  traceFile.close()
 }
 
 class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {

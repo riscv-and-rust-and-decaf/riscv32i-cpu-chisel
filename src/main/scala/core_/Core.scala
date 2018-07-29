@@ -1,15 +1,14 @@
 package core_
 
 import chisel3._
+import chisel3.util.Valid
 import core_.mmu.MMU
 
 class CoreState extends Bundle {
   val idex      = new ID_EX_Output()
-  val id_branch = Output(UInt(32.W))
-  val ifinst    = Output(UInt(32.W))
   val ifpc      = Output(UInt(32.W))
   val reg       = Output(Vec(32, UInt(32.W)))
-  val id        = new IDState
+  val finish_pc = Output(Valid(UInt(32.W)))
 }
 
 class Core extends Module {
@@ -54,13 +53,11 @@ class Core extends Module {
   ex.io.flush := csr.io.flush
   mem.io.flush := csr.io.flush
 
-
   // all the fxxking debug things... fxxk chisel
   val d = io.debug
   d.reg       <> reg.io.log
-  d.ifinst    <> iff.io.id.inst
   d.ifpc      <> iff.io.id.pc
-  d.id_branch <> id.io.iff.branch.bits
   d.idex      <> id.io.ex.asTypeOf(new ID_EX_Output)
-  d.id        <> id.d
+  d.finish_pc.valid := mem.io.ex.ready
+  d.finish_pc.bits  := mem.io.csr.excep.pc
 }

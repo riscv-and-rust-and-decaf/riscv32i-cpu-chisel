@@ -35,8 +35,6 @@ class ID extends Module {
 
   val flush = io.flush
 
-  val d = io.debug
-
   val inst = RegInit(Const.NOP_INST)
   val pc = RegInit(0.U(32.W))
   // If ID is stalling, the current instruction is not executed in this cycle.
@@ -46,90 +44,67 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
 
-  d.pc := pc
-
-  val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
+  // Decode instruction
+  val decRes   = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
   val instType = decRes(DecTable.TYPE)
-
   val rs1Addr  = inst(19, 15)
   val rs2Addr  = inst(24, 20)
   val rdAddr   = inst(11, 7)
+  val csrAddr  = inst(31,20)
+  val imm      = Wire(SInt(32.W)) // Assign later
 
-  val csrAddr = inst(31,20)
-
-  val imm = Wire(SInt(32.W))
-
-  d.imm := imm
-  
-  //Get regVar and  forwarding
-
+  // Read from RegFile
   io.reg.read1.addr := rs1Addr
   io.reg.read2.addr := rs2Addr
+  io.csr.addr := csrAddr
 
-  val exWrRegOp = io.exWrRegOp
-  val memWrRegOp = io.memWrRegOp
-  
-  val exWrCSROp = io.exWrCSROp
-  val memWrCSROp = io.memWrCSROp
-  
+  // Final register value (include forwarding)
   val rs1Val = PriorityMux(Seq(
-    (!rs1Addr.orR,                0.U),                // reading x0 always gives 0
-    (rs1Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
-    (rs1Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
-    (true.B,                      io.reg.read1.data))) // from the register file
+    (rs1Addr === 0.U,                 0.U),                // reading x0 always gives 0
+    (rs1Addr === io.exWrRegOp.addr,   io.exWrRegOp.data),  // forwarding from EX
+    (rs1Addr === io.memWrRegOp.addr,  io.memWrRegOp.data), // forwarding from MEM
+    (true.B,                          io.reg.read1.data))) // from the register file
   val rs2Val = PriorityMux(Seq(
-    (!rs2Addr.orR,                0.U),                // reading x0 always gives 0
-    (rs2Addr === exWrRegOp.addr,  exWrRegOp.data),     // forwarding from last instruction
-    (rs2Addr === memWrRegOp.addr, memWrRegOp.data),    // from last but one
-    (true.B,                      io.reg.read2.data))) // from the register file
-
+    (rs2Addr === 0.U,                 0.U),                // reading x0 always gives 0
+    (rs2Addr === io.exWrRegOp.addr,   io.exWrRegOp.data),  // forwarding from EX
+    (rs2Addr === io.memWrRegOp.addr,  io.memWrRegOp.data), // forwarding from MEM
+    (true.B,                          io.reg.read2.data))) // from the register file
   val csrVal = PriorityMux(Seq(
-    (exWrCSROp.addr === csrAddr && exWrCSROp.mode.orR,   exWrCSROp.newVal),
-    (memWrCSROp.addr === csrAddr && memWrCSROp.mode.orR, memWrCSROp.newVal),
-    (true.B ,                                            io.csr.rdata)))
+    (csrAddr === io.exWrCSROp.addr && io.exWrCSROp.valid,   io.exWrCSROp.data),
+    (csrAddr === io.memWrCSROp.addr && io.memWrCSROp.valid, io.memWrCSROp.data),
+    (true.B,                                                io.csr.rdata)))
 
+  // Debug
+  val d = io.debug
+  d.pc := pc
+  d.imm := imm
   d.bt := 0.U
   d.l := false.B
-
-  //Null Init
-  io.iff.branch.valid := false.B
-  io.iff.branch.bits  := 0.U
-
-  io.ex.oprd1 := 0.U
-  io.ex.oprd2 := 0.U
-  io.ex.opt := decRes(DecTable.OPT)
-  io.ex.store_data := 0.U
-  io.ex.wrRegOp.data := 0.U
-  io.ex.wrRegOp.rdy  := false.B
-  val wregAddr = io.ex.wrRegOp.addr
-  wregAddr := 0.U
-
-  io.csr.addr := 0.U
-
-  io.ex.wrCSROp.mode := 0.U
-  io.ex.wrCSROp.addr := csrAddr // don't care when mode==0
-  io.ex.wrCSROp.oldVal := csrVal
-  io.ex.wrCSROp.rsVal := 0.U
-  io.ex.wrCSROp.newVal := 0.U
-
-  io.ex.xRet.valid := false.B
-  io.ex.xRet.bits := 0.U
-
-  imm := 0.S
-
-  // deal with different kind inst
-
   d.type_ := instType
   d.opt := decRes(DecTable.OPT)
+
+  // Default output
+  io.iff.branch := 0.U.asTypeOf(Valid(UInt(32.W)))
+  io.ex.aluOp := 0.U.asTypeOf(new ALUOp)
+  io.ex.aluOp.opt := decRes(DecTable.OPT)
+  io.ex.wrCSROp := 0.U.asTypeOf(new WrCSROp)
+  io.ex.wrRegOp := 0.U.asTypeOf(new WrRegOp)
+  io.ex.xRet := 0.U.asTypeOf(Valid(UInt(32.W)))
+  io.ex.excep := 0.U.asTypeOf(new Exception)
+  io.ex.store_data := 0.U
+  imm := 0.S
+  // OPTIMIZE: Better way to set io.ex = 0 ?
+
+  // deal with different kind inst
 
   // read-after-load data hazard
   val instTypesUsingRs1 = Seq(InstType.R, InstType.I, InstType.S, InstType.B)
   val instTypesUsingRs2 = Seq(InstType.R, InstType.S, InstType.B)
-  val rs1Hazard = (rs1Addr === exWrRegOp.addr) && 
+  val rs1Hazard = (rs1Addr === io.exWrRegOp.addr) &&
     instTypesUsingRs1.map(x => x === instType).reduce(_ || _)
-  val rs2Hazard = (rs2Addr === exWrRegOp.addr) && 
+  val rs2Hazard = (rs2Addr === io.exWrRegOp.addr) &&
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
-  val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
+  val stall = (!io.exWrRegOp.rdy) && (io.exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
   
   val excep = RegInit(0.U.asTypeOf(new Exception))
   when(!stall) {
@@ -149,8 +124,8 @@ class ID extends Module {
 
   when (stall) {
     // flush current instruction
-    wregAddr := 0.U             // don't write registers
-    io.ex.opt := OptCode.ADD    // don't write memory
+    io.ex.wrRegOp.addr := 0.U             // don't write registers
+    io.ex.aluOp.opt := OptCode.ADD    // don't write memory
     io.iff.branch.valid := false.B // don't branch
     io.iff.ready := false.B     // tell IF not to advance
   } 
@@ -158,29 +133,29 @@ class ID extends Module {
     io.iff.ready := true.B
     switch(instType) {
       is(InstType.R) {
-        io.ex.oprd1 := rs1Val
-        io.ex.oprd2 := rs2Val
-        wregAddr := rdAddr
+        io.ex.aluOp.rd1 := rs1Val
+        io.ex.aluOp.rd2 := rs2Val
+        io.ex.wrRegOp.addr := rdAddr
       }
       is(InstType.I) {
         imm := inst(31,20).asSInt
-        io.ex.oprd1 := rs1Val
-        io.ex.oprd2 := imm.asUInt
-        wregAddr := rdAddr
+        io.ex.aluOp.rd1 := rs1Val
+        io.ex.aluOp.rd2 := imm.asUInt
+        io.ex.wrRegOp.addr := rdAddr
 
         when(decRes(DecTable.OPT) === OptCode.JALR) {
           io.iff.branch.bits := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
           io.iff.branch.valid  := true.B
 
-          io.ex.oprd1 := pc
-          io.ex.oprd2 := 4.U
-          io.ex.opt   := OptCode.ADD
+          io.ex.aluOp.rd1 := pc
+          io.ex.aluOp.rd2 := 4.U
+          io.ex.aluOp.opt   := OptCode.ADD
         }
       }
       is(InstType.S) {
         imm := Cat(inst(31,25), inst(11,7)).asSInt
-        io.ex.oprd1 := rs1Val
-        io.ex.oprd2 := imm.asUInt
+        io.ex.aluOp.rd1 := rs1Val
+        io.ex.aluOp.rd2 := imm.asUInt
         io.ex.store_data := rs2Val
       }
       is(InstType.B) {
@@ -189,43 +164,48 @@ class ID extends Module {
         val bt = decRes(DecTable.OPT)
         val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
         val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
-        val e = (rs1Val === rs2Val)
+        val e = rs1Val === rs2Val
         io.iff.branch.valid := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
-        io.ex.opt := OptCode.ADD
+        io.ex.aluOp.opt := OptCode.ADD
 
         d.bt := bt
         d.l := l
       }
       is(InstType.U) {
         imm := (inst & "h_fffff000".U).asSInt
-        io.ex.oprd1 := imm.asUInt;
+        io.ex.aluOp.rd1 := imm.asUInt
         val ut = decRes(DecTable.OPT)
-        io.ex.oprd2 := Mux(ut(0), pc, 0.U)
-        io.ex.opt   := OptCode.ADD
-        wregAddr := rdAddr
+        io.ex.aluOp.rd2 := Mux(ut(0), pc, 0.U)
+        io.ex.aluOp.opt   := OptCode.ADD
+        io.ex.wrRegOp.addr := rdAddr
       }
       is(InstType.J) {
         imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
         io.iff.branch.bits := pc + imm.asUInt
         io.iff.branch.valid  := true.B
 
-        io.ex.oprd1 := pc
-        io.ex.oprd2 := 4.U
-        //io.ex.opt   := OptCode.ADD //not necessary
-        wregAddr := rdAddr
+        io.ex.aluOp.rd1 := pc
+        io.ex.aluOp.rd2 := 4.U
+        io.ex.aluOp.opt   := OptCode.ADD //not necessary
+        io.ex.wrRegOp.addr := rdAddr
       }
       is(InstType.SYS) {
         val fct3 = inst(14,12)
 
-        when(fct3.orR) {
-          io.csr.addr := csrAddr
-          io.ex.oprd1 := csrVal
-
-          io.ex.wrCSROp.mode := fct3(1,0)
-          io.ex.wrCSROp.rsVal := Mux(fct3(2), rs1Addr, rs1Val)
-
-          wregAddr := rdAddr
+        when(fct3.orR) {  // CSR inst. Calculate new value here.
+          val mode = fct3(1,0)
+          val rsVal = Mux(fct3(2), rs1Addr, rs1Val)
+          val newVal = MuxLookup(mode, 0.U, Seq(
+            (CSRMODE.RW, rsVal),
+            (CSRMODE.RS, csrVal | rsVal),
+            (CSRMODE.RC, csrVal & ~rsVal)
+          ))
+          io.ex.wrCSROp.valid := true.B
+          io.ex.wrCSROp.addr := csrAddr
+          io.ex.wrCSROp.data := newVal
+          io.ex.wrRegOp.addr := rdAddr
+          io.ex.aluOp.rd1    := csrVal
         }
         .otherwise {
           val inst_p2 = inst(24,20)

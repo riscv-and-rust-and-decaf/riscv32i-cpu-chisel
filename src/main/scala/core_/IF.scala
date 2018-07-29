@@ -41,7 +41,7 @@ class IF extends Module {
   io.id.excep.code := 0.U
   io.id.excep.pc := pc
 
-  when(stall || branch.valid) {
+  when(stall || branch.valid || io.id.branch.valid) {
     io.id.pc   := 0.U
     io.id.inst := Const.NOP_INST
   }.otherwise {

@@ -12,10 +12,6 @@ class EX extends Module {
     val flush = Input(Bool())
   })
 
-  val excep = RegInit(0.U.asTypeOf(new Exception))
-  excep := io.id.excep
-  io.mem.excep := excep
-
   val flush = io.flush
 
   // Stall
@@ -24,11 +20,9 @@ class EX extends Module {
   //------------------- ALU ----------------------
 
   // Lock input
-  val a = RegNext(io.id.oprd1, init=0.U(32.W))
-  val b = RegNext(io.id.oprd2, init=0.U(32.W))
-  val opt = RegNext(io.id.opt, init=OptCode.ADD)
-
-
+  val a   = RegNext(io.id.aluOp.rd1, init=0.U(32.W))
+  val b   = RegNext(io.id.aluOp.rd2, init=0.U(32.W))
+  val opt = RegNext(io.id.aluOp.opt, init=OptCode.ADD)
 
   val shamt = b(4, 0)
 
@@ -53,8 +47,8 @@ class EX extends Module {
   //-------------- Reg & Ram Op ------------------
 
   // Lock input
-  val wregAddr = RegNext(io.id.wrRegOp.addr, init=0.U(5.W))
-  val store_data = RegNext(io.id.store_data, init=0.U(32.W))
+  val wregAddr   = RegNext(io.id.wrRegOp.addr, init=0.U(5.W))
+  val store_data = RegNext(io.id.store_data,   init=0.U(32.W))
 
   io.mem.wrRegOp.addr := wregAddr
   io.mem.wrRegOp.data := aluRes
@@ -73,24 +67,18 @@ class EX extends Module {
 
   //------------------- CSR ----------------------
 
-  val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
-  wrCSROp := io.id.wrCSROp
+  val excep = RegNext(io.id.excep)
+  val wrCSROp = RegNext(io.id.wrCSROp)
+  val xRet = RegNext(io.id.xRet)
 
+  io.mem.excep := excep
   io.mem.wrCSROp := wrCSROp
-  io.mem.wrCSROp.newVal := MuxLookup(wrCSROp.mode, 0.U, Seq(
-    CSRMODE.RW -> wrCSROp.rsVal,
-    CSRMODE.RS -> (wrCSROp.oldVal | wrCSROp.rsVal),
-    CSRMODE.RC -> (wrCSROp.oldVal & ~wrCSROp.rsVal)
-  ))
-
-  val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
-  xRet := io.id.xRet
   io.mem.xRet := xRet
   
   when(flush) {
     opt := OptCode.ADD
     wregAddr := 0.U
-    wrCSROp.mode := 0.U
+    wrCSROp.valid := false.B
     excep.valid := false.B
   }
 

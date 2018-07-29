@@ -62,13 +62,13 @@ class MEM extends Module {
   when(io.flush) {
     excep.valid := false.B
     wregAddr := 0.U
-    wrCSROp.mode := CSRMODE.NOP
+    wrCSROp.valid := false.B
     ramOp.mode := RAMMode.NOP
     //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
   }
   when(excep.valid) {
     io.wrRegOp.addr := 0.U
-    io.csr.wrCSROp.mode := CSRMODE.NOP
+    io.csr.wrCSROp.valid := false.B
     io.mmu.mode := RAMMode.NOP
     //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
   }
