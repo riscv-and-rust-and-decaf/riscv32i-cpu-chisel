@@ -103,15 +103,22 @@ class CSR extends Module {
   val mimpid    = 2333.U(32.W)
   val mhartid   = 0.U(32.W)
 
+  val mstatus = RegInit(0.U.asTypeOf(new MStatus))
+
   io.id.rdata := MuxLookup(io.id.addr, csr(io.id.addr), Seq(
     ADDR.mvendorid -> mvendorid,
     ADDR.marchid -> marchid,
     ADDR.mimpid -> mimpid,
-    ADDR.mhartid -> mhartid
+    ADDR.mhartid -> mhartid,
+    ADDR.mstatus -> mstatus.asUInt
   ))
 
   when(io.mem.wrCSROp.mode =/= CSRMODE.NOP && io.mem.wrCSROp.addr < 0x400.U) {
-    csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
+    when(io.mem.wrCSROp.addr === ADDR.mstatus) {
+      mstatus := io.mem.wrCSROp.newVal.asTypeOf(new MStatus)
+    }.otherwise {
+      csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
+    }
   }
 
   //val pc = Wire(UInt(32.W))
@@ -124,7 +131,6 @@ class CSR extends Module {
   xRet := false.B
 
   // Alias
-  val mstatus = csr(ADDR.mstatus).asTypeOf(new MStatus)
   val mepc = csr(ADDR.mepc)
   val sepc = csr(ADDR.sepc)
   val uepc = csr(ADDR.uepc)
@@ -138,7 +144,7 @@ class CSR extends Module {
     Priv.M  -> mstatus.MIE,
     Priv.S  -> mstatus.SIE,
     Priv.U  -> mstatus.UIE
-    ))
+  ))
 
   when(io.mem.excep.valid && ( newMode > prv || (newMode === prv && ie))) {
     excep  := true.B
@@ -222,8 +228,8 @@ class CSR extends Module {
 
   //------------------- MMU ----------------------
   io.mmu.satp := csr(ADDR.satp)
-  io.mmu.sum := csr(ADDR.mstatus)(18)
-  io.mmu.mxr := csr(ADDR.mstatus)(19)
+  io.mmu.sum := mstatus.SUM
+  io.mmu.mxr := mstatus.MXR
   io.mmu.flush.valid := false.B // TODO
   io.mmu.flush.bits := 0.U
   io.mmu.priv := prv
