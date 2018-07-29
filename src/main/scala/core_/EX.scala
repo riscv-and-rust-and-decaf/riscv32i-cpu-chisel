@@ -82,6 +82,10 @@ class EX extends Module {
     CSRMODE.RS -> (wrCSROp.oldVal | wrCSROp.rsVal),
     CSRMODE.RC -> (wrCSROp.oldVal & ~wrCSROp.rsVal)
   ))
+
+  val xRet = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
+  xRet := io.id.xRet
+  io.mem.xRet := xRet
   
   when(flush) {
     opt := OptCode.ADD

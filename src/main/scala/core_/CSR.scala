@@ -10,12 +10,12 @@ class CSR extends Module {
     val mem = Flipped(new MEM_CSR)
     val mmu = new CSR_MMU
 
-    val flush      = Output(Bool())
-    val csrExcepPc = Output(UInt(32.W))
+    val flush = Output(Bool())
+    val csrNewPc = Output(UInt(32.W))
   })
 
-  val priv = RegInit(Priv.M)
-  priv := priv
+  val prv = RegInit(Priv.M)
+  prv := prv
 
   object ADDR {
     // M Info
@@ -52,6 +52,9 @@ class CSR extends Module {
     val sip       = "h144".U
     // S Protection and Translation
     val satp      = "h180".U
+    // U
+    val uepc      = "h041".U
+    val ucause    = "h042".U
   }
 
   val csr = Mem(0x400, UInt(32.W))
@@ -68,6 +71,31 @@ class CSR extends Module {
       csr(i) := 0.U
     }
   }
+
+  class MStatus extends Bundle {
+    val SD = Bool()
+    val zero1 = UInt(8.W)
+    val TSR = Bool()
+    val TW = Bool()
+    val TVM = Bool()
+    val MXR = Bool()
+    val SUM = Bool()
+    val MPriv = Bool()
+    val XS = UInt(2.W)
+    val FS = UInt(2.W)
+    val MPP = UInt(2.W)
+    val old_HPP = UInt(2.W)
+    val SPP = UInt(1.W)
+    val MPIE = Bool()
+    val old_HPIE = Bool()
+    val SPIE = Bool()
+    val UPIE = Bool()
+    val MIE = Bool()
+    val old_HIE = Bool()
+    val SIE = Bool()
+    val UIE = Bool()
+  }
+
 
   // read-only m info
   val mvendorid = 2333.U(32.W)
@@ -86,27 +114,111 @@ class CSR extends Module {
     csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
   }
 
+  //val pc = Wire(UInt(32.W))
   //val excep = Wire(Bool())
   val excep = RegInit(false.B)
+  val xRet  = RegInit(false.B)
+  val xRet_x = RegInit(Priv.M)
 
-  excep := io.mem.excep.valid
+  excep := false.B
+  xRet := false.B
 
-  when(io.mem.excep.valid) {
-    csr(ADDR.mepc)   := io.mem.excep.pc
-    csr(ADDR.mcause) := Mux(io.mem.excep.code === Cause.ECallU,
-      io.mem.excep.code + priv,
+  // Alias
+  val mstatus = csr(ADDR.mstatus).asTypeOf(new MStatus)
+  val mepc = csr(ADDR.mepc)
+  val sepc = csr(ADDR.sepc)
+  val uepc = csr(ADDR.uepc)
+  val mcause = csr(ADDR.mcause)
+  val scause = csr(ADDR.scause)
+  val ucause = csr(ADDR.ucause)
+  val mtvec = csr(ADDR.mtvec)
+
+  val newMode = Priv.M //TODO: S-mode Trap
+  val ie = MuxLookup(prv, false.B, Seq(
+    Priv.M  -> mstatus.MIE,
+    Priv.S  -> mstatus.SIE,
+    Priv.U  -> mstatus.UIE
+    ))
+
+  when(io.mem.excep.valid && ( newMode > prv || (newMode === prv && ie))) {
+    excep  := true.B
+
+    val cause = Mux(io.mem.excep.code === 8.U,
+      io.mem.excep.code + prv,
       io.mem.excep.code)
+    val ePc = io.mem.excep.pc + 4.U //TODO: May not +4
+
+    switch(newMode) {
+      is(Priv.M) {
+        mstatus.MPP := prv
+        mepc := ePc
+        mcause := cause
+      }
+      is(Priv.S) {
+        mstatus.SPP := (prv === Priv.S)
+        sepc := ePc
+        scause := cause
+      }
+      is(Priv.U) {
+        uepc := ePc
+        ucause := cause
+      }
+    }
+    prv := newMode
+
+  }
+  .elsewhen(io.mem.xRet.valid && (io.mem.xRet.bits <= prv)) {
+    xRet := true.B
+    val x = io.mem.xRet.bits
+    xRet_x := x
+    // prv<- xPP
+    // xIE <- xPIE
+    // xPIE <- 1
+    // xPP <- U
+    prv := MuxLookup(x, 0.U, Seq(
+      Priv.M  -> mstatus.MPP,
+      Priv.S  -> mstatus.SPP,
+      Priv.U  -> Priv.U
+      ))
+    switch(x) {
+      is(Priv.M) {
+        mstatus.MIE := mstatus.MPIE
+        mstatus.MPIE := 1.U
+        mstatus.MPP := Priv.U
+      }
+      is(Priv.S) {
+        mstatus.SIE := mstatus.SPIE
+        mstatus.SPIE := 1.U
+        mstatus.SPP := 0.U
+      }
+      is(Priv.U) {
+        mstatus.UIE := mstatus.MPIE
+        mstatus.UPIE := 1.U
+      }
+    }
   }
 
-  val mtvec = csr(ADDR.mtvec)
-  val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
-  val pc = Mux(mtvec(1,0) === 0.U,
-    pcA4,
-    pcA4 + 4.U * csr(ADDR.mcause)
-  )
 
-  io.csrExcepPc := pc
-  io.flush := excep
+  io.csrNewPc := 0.U
+  io.flush := false.B
+
+  when(excep) {
+    io.flush := true.B
+    val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
+    io.csrNewPc := Mux(mtvec(1,0) === 0.U,
+      pcA4,
+      pcA4 + 4.U * mcause
+      )
+  }
+  .elsewhen(xRet) {
+    printf("xRet")
+    io.flush := true.B
+    io.csrNewPc := MuxLookup(xRet_x, 0.U , Seq(
+      Priv.M -> mepc,
+      Priv.S -> sepc,
+      Priv.U -> uepc
+    ))
+  }
 
   //------------------- MMU ----------------------
   io.mmu.satp := csr(ADDR.satp)
@@ -114,7 +226,7 @@ class CSR extends Module {
   io.mmu.mxr := csr(ADDR.mstatus)(19)
   io.mmu.flush.valid := false.B // TODO
   io.mmu.flush.bits := 0.U
-  io.mmu.priv := priv
+  io.mmu.priv := prv
 }
 
 

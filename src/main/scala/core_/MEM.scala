@@ -42,13 +42,16 @@ class MEM extends Module {
   //------------------- CSR ----------------------
 
   val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
-  val excep = RegInit(0.U.asTypeOf(new Exception))
+  val excep   = RegInit(0.U.asTypeOf(new Exception))
+  val xRet    = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
   when(!stall) {
     wrCSROp := io.ex.wrCSROp
     excep := io.ex.excep
+    xRet := io.ex.xRet
   }
   io.csr.wrCSROp := wrCSROp
   io.csr.excep := excep
+  io.csr.xRet := xRet
 
   // PageFault
   when(io.mmu.pageFault) {
@@ -57,7 +60,7 @@ class MEM extends Module {
   }
 
   when(io.flush) {
-    io.csr.excep.valid := false.B
+    excep.valid := false.B
     wregAddr := 0.U
     wrCSROp.mode := CSRMODE.NOP
     ramOp.mode := RAMMode.NOP

@@ -168,6 +168,7 @@ class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   expect(c.d.ifpc, 0x34)
 }
 
+
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv") // output .vcd wave file
   "Core module fwno" should "pass test" in {
@@ -192,17 +193,6 @@ class CoreTester extends ChiselFlatSpec {
   }
 }
 
-
-//class CoreAsmTester extends ChiselFlatSpec {
-//  val args = Array[String]("-fiwv")
-//  "Run hello" should "pass test" in {
-//    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-//      c => new CoreTest(c, "monitor.bin") {
-//        step(100000)
-//      }
-//    } should be (true)
-//  }
-//}
 
 // runMain core_.Repl
 object Repl extends App {

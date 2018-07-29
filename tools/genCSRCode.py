@@ -1,4 +1,7 @@
-csrs = ["mvendorid","marchid","mimpid","mhartid","mstatus", "misa", "medeleg", "mideleg", "mie", "mtvec", "mcounteren", "mscratch", "mepc", "mcause", "mtval", "mip"]
+csrs = ["mvendorid","marchid","mimpid","mhartid","mstatus", "misa", "medeleg", "mideleg", "mie", "mtvec", "mcounteren", "mscratch", "mepc", "mcause", "mtval", "mip","sepc","scause","uepc","ucause"]
+
+for r in csrs:
+    print("val %s = RegInit(0.U(32.W))" % r)
 
 for r in csrs:
     print("ADDR.%s -> %s," % (r,r))

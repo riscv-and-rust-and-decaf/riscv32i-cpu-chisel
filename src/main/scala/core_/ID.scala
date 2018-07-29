@@ -33,10 +33,6 @@ class ID extends Module {
     val debug = new IDState()
   })
 
-  val excep = RegInit(0.U.asTypeOf(new Exception))
-  excep := io.iff.excep
-  io.ex.excep := excep
-
   val flush = io.flush
 
   val d = io.debug
@@ -50,14 +46,8 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
 
-  when(flush) {
-    pc := 0.U
-    inst := Const.NOP_INST
-  }
-  .elsewhen (io.iff.ready) {
-    pc := io.iff.pc
-    inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
-  }
+  pc := io.iff.pc
+
   // otherwise stall
 
   d.pc := pc
@@ -126,6 +116,9 @@ class ID extends Module {
   io.ex.wrCSROp.rsVal := 0.U
   io.ex.wrCSROp.newVal := 0.U
 
+  io.ex.xRet.valid := false.B
+  io.ex.xRet.bits := 0.U
+
   imm := 0.S
 
   // deal with different kind inst
@@ -141,6 +134,22 @@ class ID extends Module {
   val rs2Hazard = (rs2Addr === exWrRegOp.addr) && 
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
   val stall = (!exWrRegOp.rdy) && (exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
+  
+  val excep = RegInit(0.U.asTypeOf(new Exception))
+  when(!stall) {
+    excep := io.iff.excep
+  }
+  io.ex.excep := excep
+
+  when(flush) {
+    pc := 0.U
+    inst := Const.NOP_INST
+    excep.valid := false.B
+  }
+  .elsewhen (io.iff.ready) {
+    pc := io.iff.pc
+    inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
+  }
 
   when (stall) {
     // flush current instruction
@@ -148,7 +157,8 @@ class ID extends Module {
     io.ex.opt := OptCode.ADD    // don't write memory
     io.iff.branch.valid := false.B // don't branch
     io.iff.ready := false.B     // tell IF not to advance
-  } .otherwise {
+  } 
+  .otherwise {
     io.iff.ready := true.B
     switch(instType) {
       is(InstType.R) {
@@ -222,13 +232,23 @@ class ID extends Module {
           wregAddr := rdAddr
         }
         .otherwise {
-          //TODO:  EBREAK
-          when(!excep.valid) {
-            io.ex.excep.valid := true.B
-            io.ex.excep.code := Cause.ECallU
+          val inst_p2 = inst(24,20)
+          switch(inst_p2) {
+            is(SYS_INST_P2.ECALL) {
+              when(!excep.valid) {
+                io.ex.excep.valid := true.B
+                io.ex.excep.code := Cause.ECallU
+              }
+            }
+            is(SYS_INST_P2.EBREAK) {
+              //TODO
+            }
+            is(SYS_INST_P2.xRET) {
+              io.ex.xRet.valid := true.B
+              io.ex.xRet.bits := inst(29,28)
+            }
           }
         }
-
       }
       is(InstType.BAD) {
         when(!excep.valid) {

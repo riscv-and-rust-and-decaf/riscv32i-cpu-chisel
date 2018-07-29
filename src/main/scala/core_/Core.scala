@@ -49,7 +49,7 @@ class Core extends Module {
 
   //flush of exceptions
   iff.io.id.branch.valid := csr.io.flush | id.io.iff.branch.valid
-  iff.io.id.branch.bits := Mux(csr.io.flush, csr.io.csrExcepPc, id.io.iff.branch.bits)
+  iff.io.id.branch.bits := Mux(csr.io.flush, csr.io.csrNewPc, id.io.iff.branch.bits)
   id.io.flush := csr.io.flush
   ex.io.flush := csr.io.flush
   mem.io.flush := csr.io.flush
