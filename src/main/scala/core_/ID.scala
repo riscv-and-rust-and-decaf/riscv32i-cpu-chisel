@@ -46,10 +46,6 @@ class ID extends Module {
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
 
-  pc := io.iff.pc
-
-  // otherwise stall
-
   d.pc := pc
 
   val decRes = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)

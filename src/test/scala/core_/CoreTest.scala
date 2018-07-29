@@ -68,6 +68,7 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
         loop.break
       }
       step(1)
+      cycle += 1
     }
   }
 }
