@@ -31,7 +31,7 @@ class IF extends Module {
 
   // instruction fetch
   io.mmu.addr  := pc; // fetch current instruction
-  io.mmu.mode  := RAMMode.LW
+  io.mmu.mode  := Mux(reset.toBool, RAMMode.NOP, RAMMode.LW)
   io.mmu.wdata := 0.U
 
 

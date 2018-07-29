@@ -2,11 +2,12 @@ package devices
 
 import core_._
 import chisel3._
+import chisel3.core.stop
 import chisel3.util._
 
 object MemoryRegionExt {
   val RAM_BEGIN    = 0x80000000L.U(32.W)
-  val RAM_END      = 0x80400000L.U(32.W)
+  val RAM_END      = 0x80800000L.U(32.W)
   val FLASH_BEGIN  = 0x00800000L.U(32.W)
   val FLASH_END    = 0x01000000L.U(32.W)
   val SERIAL_BEGIN = 0x10000000L.U(32.W)
@@ -105,9 +106,11 @@ class IOManager extends Module {
         memWait := waitRAM
         mem.ok := false.B
       }
-    }.elsewhen(mem.addr.atFlash && flashFree) {
-      bindInput(mem, io.flash)
-      memWait := waitFlash
+    }.elsewhen(mem.addr.atFlash) {
+      when(flashFree) {
+        bindInput(mem, io.flash)
+        memWait := waitFlash
+      }
     }.elsewhen(mem.addr.atSerial) {
       bindInput(mem, io.serial)
       when(RAMMode.isWrite(mem.mode)) {
@@ -117,11 +120,14 @@ class IOManager extends Module {
         memWait := waitSerial
         mem.ok := false.B
       }
+    }.otherwise {
+      printf("[IO] MEM access invalid address: %x\n", mem.addr)
+      stop(1)
     }
   }
 
   // Handle IF only when MEM is none
-  when(ifWait === waitNone && memWait === waitNone && mem.mode === RAMMode.NOP) {
+  when(ifWait === waitNone && memWait === waitNone && mem.mode === RAMMode.NOP && if_.mode =/= RAMMode.NOP) {
     when(if_.addr.atRAM) {
       bindInput(if_, io.ram)
       ifWait := waitRAM     // Readonly, always wait
@@ -130,6 +136,9 @@ class IOManager extends Module {
       bindInput(if_, io.flash)
       ifWait := waitFlash
       if_.ok := false.B
+    }.otherwise {
+      printf("[IO] IF access invalid address: %x\n", if_.addr)
+      stop(1)
     }
   }
 }
