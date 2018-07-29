@@ -8,7 +8,7 @@ import core_._
 class MockRam(printLog: Boolean = true) extends Module {
   val io = IO(Flipped(new RAMOp))
 
-  private val mem = Mem(0x800000, UInt(8.W))
+  val mem = Mem(0x800000, UInt(8.W))
 
   val mode = RegNext(io.mode, init=0.U)
   val addr = RegNext(io.addr, init=0.U)

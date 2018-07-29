@@ -44,6 +44,34 @@ class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
   TestUtil.loadRAM(this, c.io.ready, c.io.ram_init, data)
 }
 
+// x31 = 0xdead000 : Fail. reason = (char*)a0
+// x31 = 0xcafe000 : Pass
+class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTest(c, fname) {
+  import scala.util.control.Breaks
+  val loop = new Breaks
+  var cycle = 0
+  loop.breakable {
+    while(true) {
+      val x31 = peek(c.d.reg(31)).toInt
+      if(x31 == 0xdead000) {
+        val ptr = (peek(c.d.reg(10)) - 0x80000000).toInt
+        val reason = (ptr until ptr + 100)
+          .map(i => peekAt(c.ram.mem, i).toChar)
+          .takeWhile(x => x != 0)
+          .mkString
+        expect(false, reason)
+        loop.break
+      } else if(x31 == 0xcafe000) {
+        loop.break
+      } else if(cycle >= max_cycles) {
+        expect(false, s"Timeout: $max_cycles cycles")
+        loop.break
+      }
+      step(1)
+    }
+  }
+}
+
 class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(10)  // CPI=2, Skip 5 insts
   expect(c.d.reg(1), 20)
@@ -108,25 +136,6 @@ class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname
   expect(c.d.reg(5), "h_ffff_fff5".U)
 }
 
-class NaiveInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(90)
-  expect(c.d.reg(7), 55)
-  step(200)
-  expect(c.d.reg(4), 1000)
-  expect(c.d.reg(5), 1597)
-  expect(c.d.reg(6), 987)
-  expect(c.d.reg(7), 1597)
-  expect(c.d.reg(1), 597)
-}
-
-class LoadStoreInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  // Just check the result
-  step(125)
-  expect(c.d.reg(1), "h_87654321".U)
-  expect(c.d.reg(2), "h_87654543".U)
-}
-
-
 class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   step(3)                                      // all before l1 has entered pipeline
   for (_ <- 0 until 0x40) {
@@ -171,15 +180,15 @@ class CoreTester extends ChiselFlatSpec {
       c => new CoreTestWithFw(c, "test_asm/test3.bin")
     } should be(true)
   }
-  "Core test 1+2+..10" should "eq to 55" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new NaiveInstTest(c, "test_asm/test4.bin")
-    } should be(true)
-  }
-  "Core test simple load/store" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new LoadStoreInstTest(c, "test_asm/test5.bin")
-    } should be (true)
+  for((name, timeout) <- Seq(
+    ("test5", 50),
+    ("test4", 250)
+  )) {
+    name should "pass test" in {
+      iotesters.Driver.execute(args, () => new CoreTestModule()) {
+        c => new CoreTestNew(c, s"test_asm/$name.bin", timeout)
+      } should be (true)
+    }
   }
 }
 
