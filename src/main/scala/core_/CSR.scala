@@ -59,15 +59,16 @@ class CSR extends Module {
 
   val csr = Mem(0x400, UInt(32.W))
 
+  // Don't use `for(i <- 0 until 0x400)` to iterate all CSRs.
+  // It may generate many unused D-triggers, which makes compiling time unacceptable.
+  // Just reflect all fields in ADDR here.
+  val csr_ids = ADDR.getClass.getDeclaredFields.map(f => {
+    f.setAccessible(true)
+    f.get(ADDR).asInstanceOf[UInt]
+  })
+
   when(reset.toBool) {
-    // Don't use `for(i <- 0 until 0x400)`.
-    // It will generate many unused D-triggers, which slow down the compiling.
-    //
-    // Just reflect all fields in ADDR
-    for(i <- ADDR.getClass.getDeclaredFields.map(f => {
-      f.setAccessible(true)
-      f.get(ADDR).asInstanceOf[UInt]
-    })) {
+    for(i <- csr_ids) {
       csr(i) := 0.U
     }
   }
@@ -113,11 +114,14 @@ class CSR extends Module {
     ADDR.mstatus -> mstatus.asUInt
   ))
 
-  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP && io.mem.wrCSROp.addr < 0x400.U) {
+  when(io.mem.wrCSROp.mode =/= CSRMODE.NOP) {
+    for(i <- csr_ids) {
+      when(i === io.mem.wrCSROp.addr) {
+        csr(i) := io.mem.wrCSROp.newVal
+      }
+    }
     when(io.mem.wrCSROp.addr === ADDR.mstatus) {
       mstatus := io.mem.wrCSROp.newVal.asTypeOf(new MStatus)
-    }.otherwise {
-      csr(io.mem.wrCSROp.addr) := io.mem.wrCSROp.newVal
     }
   }
 
