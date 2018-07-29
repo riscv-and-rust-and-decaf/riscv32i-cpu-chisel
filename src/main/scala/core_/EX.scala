@@ -12,11 +12,6 @@ class EX extends Module {
     val flush = Input(Bool())
   })
 
-  val flush = io.flush
-
-  // Stall
-  io.id.ready := io.mem.ready
-
   //------------------- ALU ----------------------
 
   // Lock input
@@ -52,7 +47,7 @@ class EX extends Module {
 
   io.mem.wrRegOp.addr := wregAddr
   io.mem.wrRegOp.data := aluRes
-  io.mem.wrRegOp.rdy := (opt & OptCode.LW) =/= OptCode.LW
+  io.mem.wrRegOp.rdy  := (opt & OptCode.LW) =/= OptCode.LW
 
   io.mem.ramOp.addr := aluRes
   io.mem.ramOp.mode := MuxLookup(opt, RAMMode.NOP, Seq(
@@ -67,19 +62,26 @@ class EX extends Module {
 
   //------------------- CSR ----------------------
 
-  val excep = RegNext(io.id.excep)
+  val excep   = RegNext(io.id.excep)
   val wrCSROp = RegNext(io.id.wrCSROp)
-  val xRet = RegNext(io.id.xRet)
-
-  io.mem.excep := excep
+  val xRet    = RegNext(io.id.xRet)
+  io.mem.excep   := excep
   io.mem.wrCSROp := wrCSROp
-  io.mem.xRet := xRet
-  
+  io.mem.xRet    := xRet
+
+  //----------------- status ---------------------
+
+  val flush = io.flush
+
+  // EX stall => ID stall. So no need to keep registers.
+  io.id.ready := io.mem.ready
+
   when(flush) {
     opt := OptCode.ADD
     wregAddr := 0.U
     wrCSROp.valid := false.B
     excep.valid := false.B
+    excep.valid_inst := false.B
   }
 
 }

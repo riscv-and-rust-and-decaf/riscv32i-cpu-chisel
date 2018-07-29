@@ -56,8 +56,8 @@ class Core extends Module {
   // all the fxxking debug things... fxxk chisel
   val d = io.debug
   d.reg       <> reg.io.log
-  d.ifpc      <> iff.io.id.pc
+  d.ifpc      <> iff.io.id.excep.pc
   d.idex      <> id.io.ex.asTypeOf(new ID_EX_Output)
-  d.finish_pc.valid := mem.io.ex.ready
+  d.finish_pc.valid := mem.io.csr.excep.valid_inst
   d.finish_pc.bits  := mem.io.csr.excep.pc
 }

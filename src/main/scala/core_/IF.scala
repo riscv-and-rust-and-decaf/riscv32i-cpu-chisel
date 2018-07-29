@@ -37,16 +37,14 @@ class IF extends Module {
 
   // Feed to ID: valid only when no stall && no branch
 
-  io.id.excep.valid := false.B
-  io.id.excep.code := 0.U
-  io.id.excep.pc := pc
+  // Default output
+  io.id.inst  := Const.NOP_INST
+  io.id.excep := 0.U.asTypeOf(new Exception)
 
-  when(stall || branch.valid || io.id.branch.valid) {
-    io.id.pc   := 0.U
-    io.id.inst := Const.NOP_INST
-  }.otherwise {
-    io.id.pc   := pc
+  when(!(stall || branch.valid || io.id.branch.valid)) {
     io.id.inst := io.mmu.rdata
+    io.id.excep.pc := pc
+    io.id.excep.valid_inst := true.B
     when(pc(1,0).orR) {
       io.id.excep.valid := true.B
       io.id.excep.code := Cause.InstAddressMisaligned

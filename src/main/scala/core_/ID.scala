@@ -33,16 +33,30 @@ class ID extends Module {
     val debug = new IDState()
   })
 
-  val flush = io.flush
+  // Registers
+  val inst  = RegInit(Const.NOP_INST)
+  val excep = RegInit(0.U.asTypeOf(new Exception))
+  val pc    = excep.pc
 
-  val inst = RegInit(Const.NOP_INST)
-  val pc = RegInit(0.U(32.W))
   // If ID is stalling, the current instruction is not executed in this cycle.
   //    (i.e. current instruction is `flushed')
   // Therefore, on the next cycle, ID must execute the same instruction.
   // However when IF sees a `stall', it simply gives out a `nop'.
   // As a result, ID should not update (receive from IF) its instruction
   //  when stalled.
+  val stall = Wire(Bool()) // Assign later
+  val flush = io.flush
+  when(flush) {
+    inst  := Const.NOP_INST
+    excep := 0.U.asTypeOf(new Exception)
+  }.elsewhen(stall) {
+    inst  := inst
+    excep := excep
+  }.otherwise {
+    // NOTE: No need to check branch now, IF already handle that.
+    inst  := io.iff.inst
+    excep := io.iff.excep
+  }
 
   // Decode instruction
   val decRes   = ListLookup(inst, DecTable.defaultDec, DecTable.decMap)
@@ -90,7 +104,8 @@ class ID extends Module {
   io.ex.wrCSROp := 0.U.asTypeOf(new WrCSROp)
   io.ex.wrRegOp := 0.U.asTypeOf(new WrRegOp)
   io.ex.xRet := 0.U.asTypeOf(Valid(UInt(32.W)))
-  io.ex.excep := 0.U.asTypeOf(new Exception)
+  io.ex.excep := excep
+  io.ex.excep.valid_inst := excep.valid_inst && !stall
   io.ex.store_data := 0.U
   imm := 0.S
   // OPTIMIZE: Better way to set io.ex = 0 ?
@@ -104,23 +119,7 @@ class ID extends Module {
     instTypesUsingRs1.map(x => x === instType).reduce(_ || _)
   val rs2Hazard = (rs2Addr === io.exWrRegOp.addr) &&
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
-  val stall = (!io.exWrRegOp.rdy) && (io.exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
-  
-  val excep = RegInit(0.U.asTypeOf(new Exception))
-  when(!stall) {
-    excep := io.iff.excep
-  }
-  io.ex.excep := excep
-
-  when(flush) {
-    pc := 0.U
-    inst := Const.NOP_INST
-    excep.valid := false.B
-  }
-  .elsewhen (io.iff.ready) {
-    pc := io.iff.pc
-    inst := Mux(io.iff.branch.valid, Const.NOP_INST, io.iff.inst)
-  }
+  stall := (!io.exWrRegOp.rdy) && (io.exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
 
   when (stall) {
     // flush current instruction

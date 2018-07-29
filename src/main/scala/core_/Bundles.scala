@@ -72,10 +72,11 @@ class RdRegOp extends Bundle {
 }
 
 class IF_ID extends Bundle {
-  val pc     = Output(UInt(32.W))
+  def pc     = excep.pc
   val inst   = Output(UInt(32.W))
+  val excep  = Output(new Exception)
+
   val branch = Input(Valid(UInt(32.W)))
-  val excep  = new Exception
   val ready  = Input(Bool())
 }
 
@@ -96,7 +97,7 @@ class ID_EX_Output extends Bundle {
   val wrCSROp    = Output(new WrCSROp)
   val xRet       = Output(Valid(UInt(2.W)))
   var store_data = Output(UInt(32.W)) // for Store Inst only
-  val excep      = new Exception
+  val excep      = Output(new Exception)
 }
 
 class ID_EX extends ID_EX_Output {
@@ -104,7 +105,7 @@ class ID_EX extends ID_EX_Output {
 }
 
 class EX_MEM extends Bundle {
-  val ramOp   = new RAMOp_Output
+  val ramOp   = Output(new RAMOp_Output)
   val wrRegOp = Output(new WrRegOp)
   val wrCSROp = Output(new WrCSROp)
   val xRet    = Output(Valid(UInt(2.W)))
@@ -113,8 +114,8 @@ class EX_MEM extends Bundle {
 }
 
 class MEM_CSR extends Bundle {
-  val wrCSROp = new WrCSROp
-  val excep   = new Exception
+  val wrCSROp = Output(new WrCSROp)
+  val excep   = Output(new Exception)
   val xRet    = Output(Valid(UInt(2.W)))
 }
 
@@ -127,4 +128,5 @@ class Exception extends Bundle {
   val valid = Output(Bool())
   val code  = Output(UInt(32.W))
   val pc    = Output(UInt(32.W))
+  val valid_inst = Output(Bool())
 }

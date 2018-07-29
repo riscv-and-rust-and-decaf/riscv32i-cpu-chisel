@@ -52,6 +52,7 @@ class MEM extends Module {
   io.csr.wrCSROp := wrCSROp
   io.csr.excep := excep
   io.csr.xRet := xRet
+  io.csr.excep.valid_inst := excep.valid_inst && !stall
 
   // PageFault
   when(io.mmu.pageFault) {
@@ -61,6 +62,7 @@ class MEM extends Module {
 
   when(io.flush) {
     excep.valid := false.B
+    excep.valid_inst := false.B
     wregAddr := 0.U
     wrCSROp.valid := false.B
     ramOp.mode := RAMMode.NOP
