@@ -41,6 +41,7 @@ class CoreTestModule(trace: Boolean = true) extends Module {
 class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
   reset()
   private val data = DataHelper.read_insts(fname)
+  print("Loading data to RAM ...\n")
   TestUtil.loadRAM(this, c.io.ready, c.io.ram_init, data)
 }
 
@@ -182,18 +183,27 @@ class CoreTester extends ChiselFlatSpec {
       c => new CoreTestWithFw(c, "test_asm/test3.bin")
     } should be(true)
   }
-  for((name, timeout) <- Seq(
-    ("test5", 50),
-    ("test4", 250)
+  for((name, timeout, trace) <- Seq(
+    ("test5", 50, true),
+    ("test4", 250, true),
+    ("hello", 500, false)
   )) {
     name should "pass test" in {
-      iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      iotesters.Driver.execute(args, () => new CoreTestModule(trace)) {
         c => new CoreTestNew(c, s"test_asm/$name.bin", timeout)
       } should be (true)
     }
   }
 }
 
+class MonitorTester extends ChiselFlatSpec {
+  val args = Array[String]("-fiwv")
+  "monitor" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
+      c => new CoreTestNew(c, "test_asm/monitor/monitor.bin", 10000)
+    } should be (true)
+  }
+}
 
 // runMain core_.Repl
 object Repl extends App {

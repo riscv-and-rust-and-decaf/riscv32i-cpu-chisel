@@ -3,7 +3,5 @@
 
 int main()  {
     puts("Hello world!\n");
-    char c;
-    while((c = getchar()))
-        putchar(c);
+    while(getchar() != 'x');
 }

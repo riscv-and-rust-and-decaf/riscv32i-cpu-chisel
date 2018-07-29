@@ -1,7 +1,10 @@
 insts := $(patsubst %.s,%.bin,$(wildcard *.s)) \
          $(patsubst %.c,%.c.bin,$(wildcard *.c))
 
-all: ${insts}
+all: ${insts} monitor/monitor.bin
+
+monitor/monitor.bin:
+	make -C monitor
 
 %.c.bin: %.c
 	../tools/assembler $^
@@ -10,6 +13,7 @@ all: ${insts}
 	../tools/assembler $^
 
 clean:
+	make -C monitor clean
 	rm *.bin
 	rm *.o
 

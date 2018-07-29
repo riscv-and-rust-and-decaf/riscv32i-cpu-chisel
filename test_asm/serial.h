@@ -1,6 +1,8 @@
 typedef unsigned char u8;
 typedef unsigned int u32;
 typedef int bool;
+const bool true = 1;
+const bool false = 0;
 
 volatile u8* const serial_data         = (u8*)0x10000000;
 volatile const u8* const serial_status = (const u8*)0x10000005;
