@@ -67,8 +67,6 @@ class MEM extends Module {
     reg.addr := 0.U
     wrCSROp.valid := false.B
     ramOp.mode := RAMMode.NOP
-    //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
   }
-
-  //printf("[MEM] Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data)
 }
+

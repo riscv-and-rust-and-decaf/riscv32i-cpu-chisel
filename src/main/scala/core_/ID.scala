@@ -37,6 +37,7 @@ class ID extends Module {
   val inst  = RegInit(Const.NOP_INST)
   val excep = RegInit(0.U.asTypeOf(new Exception))
   val pc    = excep.pc
+  val fenceICnt = RegInit(0.U(2.W)) // FENCE.I -> NOP * 4
 
   // If ID is stalling, the current instruction is not executed in this cycle.
   //    (i.e. current instruction is `flushed')
@@ -129,6 +130,7 @@ class ID extends Module {
   } 
   .otherwise {
     io.iff.ready := true.B
+    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
     switch(instType) {
       is(InstType.R) {
         io.ex.aluOp.rd1 := rs1Val
@@ -227,6 +229,21 @@ class ID extends Module {
             }
           }
         }
+      }
+      is(InstType.FENCE) {
+        printf("FENCE: %d\n", fenceICnt)
+        when(inst(14,12) === "b001".U) { // FENCE.I
+          printf("work\n")
+          when(fenceICnt === 3.U) {
+            fenceICnt := 0.U
+          }
+          .otherwise {
+            fenceICnt := fenceICnt + 1.U
+            io.iff.branch.valid := true.B
+            io.iff.branch.bits := pc 
+          }
+        }
+        // deal FENCE as NOP
       }
       is(InstType.BAD) {
         when(!excep.valid) {

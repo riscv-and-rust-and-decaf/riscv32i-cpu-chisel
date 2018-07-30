@@ -122,15 +122,16 @@ object Cause {
 
 object InstType {
   // R,I,S,B,U,J
-  val BAD = 0.U(3.W)
-  val R = 1.U(3.W)
-  val I = 2.U(3.W)
-  val S = 3.U(3.W)
-  val B = 4.U(3.W)
-  val U = 5.U(3.W)
-  val J = 6.U(3.W)
+  val BAD = 0.U(4.W)
+  val R = 1.U(4.W)
+  val I = 2.U(4.W)
+  val S = 3.U(4.W)
+  val B = 4.U(4.W)
+  val U = 5.U(4.W)
+  val J = 6.U(4.W)
 
-  val SYS = 7.U(3.W) // CSR or ECALL
+  val SYS = 7.U(4.W) // CSR or ECALL
+  val FENCE = 8.U(4.W)
 }
 
 object Priv {
@@ -190,8 +191,10 @@ object DecTable {
     Insts.JAL   -> List(InstType.J, OptCode.ADD),
     Insts.JALR  -> List(InstType.I, OptCode.JALR),
 
-    Insts.SYS   -> List(InstType.SYS, OptCode.ADD) //Maybe ecall maybe csr
-
+    Insts.SYS   -> List(InstType.SYS, OptCode.ADD), //Maybe ecall maybe csr
+    
+    Insts.FENCE -> List(InstType.FENCE, OptCode.ADD),
+    Insts.FENCE_I -> List(InstType.FENCE, OptCode.ADD)
   )
 
   // fields
@@ -248,6 +251,9 @@ object Insts { // idea from mini riscv
   def JALR   = BitPat("b?????????????????000?????1100111")
 // SYS
   def SYS    = BitPat("b?????????????????????????1110011")
+// FENCE
+  def FENCE  = BitPat("b0000????????00000000000000001111")
+  def FENCE_I= BitPat("b00000000000000000001000000001111")
 }
 
 object SYS_INST_P2 { // bits(24:20)
