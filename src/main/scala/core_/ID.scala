@@ -130,7 +130,7 @@ class ID extends Module {
   } 
   .otherwise {
     io.iff.ready := true.B
-    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
+//    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
     switch(instType) {
       is(InstType.R) {
         io.ex.aluOp.rd1 := rs1Val
@@ -162,8 +162,8 @@ class ID extends Module {
         imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
         io.iff.branch.bits := pc + imm.asUInt
         val bt = decRes(DecTable.OPT)
-        val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
-        val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
+        val l = Mux(bt(0), rs1Val < rs2Val, rs1Val.asSInt < rs2Val.asSInt)
+        val g = Mux(bt(0), rs1Val > rs2Val, rs1Val.asSInt > rs2Val.asSInt)
         val e = rs1Val === rs2Val
         io.iff.branch.valid := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
@@ -231,9 +231,7 @@ class ID extends Module {
         }
       }
       is(InstType.FENCE) {
-        printf("FENCE: %d\n", fenceICnt)
         when(inst(14,12) === "b001".U) { // FENCE.I
-          printf("work\n")
           when(fenceICnt === 3.U) {
             fenceICnt := 0.U
           }
