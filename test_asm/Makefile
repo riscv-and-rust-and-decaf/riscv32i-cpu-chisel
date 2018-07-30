@@ -1,10 +1,13 @@
 insts := $(patsubst %.s,%.bin,$(wildcard *.s)) \
          $(patsubst %.c,%.c.bin,$(wildcard *.c))
 
-all: ${insts} monitor/monitor.bin
+all: ${insts} monitor riscv-test
 
-monitor/monitor.bin:
+monitor:
 	make -C monitor
+
+riscv-test:
+	make -C riscv-test
 
 %.c.bin: %.c
 	../tools/assembler $^
@@ -14,7 +17,7 @@ monitor/monitor.bin:
 
 clean:
 	make -C monitor clean
-	rm *.bin
-	rm *.o
+	make -C riscv-test clean
+	rm -f *.bin *.o *.run
 
-.PHONY: all clean
+.PHONY: all clean monitor riscv-test
