@@ -5,6 +5,10 @@ import io
 
 USAGE = 'Usage: qemu_trace.py <kernel_obj>'
 
+if len(sys.argv) <= 1:
+	print(USAGE)
+	exit(1)
+
 kernel = sys.argv[1]
 
 p = subprocess.Popen([

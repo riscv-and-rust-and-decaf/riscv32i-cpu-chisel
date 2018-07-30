@@ -48,6 +48,23 @@ class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
 // x31 = 0xdead000 : Fail. reason = (char*)a0
 // x31 = 0xcafe000 : Pass
 class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTest(c, fname) {
+
+  def isFinished(): Boolean = {
+    val x31 = peek(c.d.reg(31)).toInt
+    if(x31 == 0xdead000) {
+      val ptr = (peek(c.d.reg(10)) - 0x80000000).toInt
+      val reason = (ptr until ptr + 100)
+        .map(i => peekAt(c.ram.mem, i).toChar)
+        .takeWhile(x => x != 0)
+        .mkString
+      expect(false, reason)
+      return true
+    } else if(x31 == 0xcafe000) {
+      return true
+    }
+    return false
+  }
+
   import java.io._
   val traceFile = new PrintWriter(new File(fname + ".run"))
 
@@ -56,16 +73,7 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
   var cycle = 0
   loop.breakable {
     while(true) {
-      val x31 = peek(c.d.reg(31)).toInt
-      if(x31 == 0xdead000) {
-        val ptr = (peek(c.d.reg(10)) - 0x80000000).toInt
-        val reason = (ptr until ptr + 100)
-          .map(i => peekAt(c.ram.mem, i).toChar)
-          .takeWhile(x => x != 0)
-          .mkString
-        expect(false, reason)
-        loop.break
-      } else if(x31 == 0xcafe000) {
+      if(isFinished()) {
         loop.break
       } else if(cycle >= max_cycles) {
         expect(false, s"Timeout: $max_cycles cycles")
@@ -81,6 +89,19 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
     }
   }
   traceFile.close()
+}
+
+// [0x80001000] = 1 : Pass
+//              > 1 : Fail. Code = value / 2
+class RiscvTest(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTestNew(c, fname, max_cycles) {
+  override def isFinished(): Boolean = {
+    val v = peekAt(c.ram.mem, 0x1000).toInt
+    val code = v / 2
+    if(code != 0) {
+      expect(false, s"Error code: $code")
+    }
+    return v != 0
+  }
 }
 
 class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
@@ -220,6 +241,23 @@ class MMUTester extends ChiselFlatSpec {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
       c => new CoreTestNew(c, "test_asm/pagetable.bin", 1500)
     } should be (true)
+  }
+}
+
+class RiscvTester extends ChiselFlatSpec {
+  val args = Array[String]("-fiwv")
+  val names =
+    Seq("breakpoint", "csr", "illegal", "ma_addr",
+      "ma_fetch", "mcsr", "sbreak", "scall", "shamt")
+      .map(x => "rv32mi-p-" + x) ++
+    Seq("csr", "dirty", "ma_fetch", "sbreak", "scall", "wfi")
+      .map(x => "rv32si-p-" + x)
+  for(name <- names) {
+    name should "pass test" in {
+      iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
+        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 1000)
+      } should be (true)
+    }
   }
 }
 
