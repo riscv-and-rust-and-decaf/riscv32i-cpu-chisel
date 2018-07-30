@@ -51,8 +51,9 @@ class PTW extends Module {
 
   val sIdle :: sWait2 :: sWait1 :: Nil = Enum(3)
   val status = RegInit(sIdle)
-  val pte    = RegNext(io.mem.rdata.asTypeOf(new PTE))
-  val mem_ok = RegNext(io.mem.ok)
+  val req    = RegInit(0.U.asTypeOf(new PN))
+  val pte    = io.mem.rdata.asTypeOf(new PTE)
+  val mem_ok = io.mem.ok
 
   io.req.ready := status === sIdle
 
@@ -69,6 +70,7 @@ class PTW extends Module {
         // Memory access for P2
         io.mem.mode := RAMMode.LW
         io.mem.addr := io.root.toAddr(io.req.bits.p2 << 2.U)
+        req := io.req.bits
         status := sWait2
       }
     }
@@ -83,6 +85,7 @@ class PTW extends Module {
         }.elsewhen(!pte.isPDE) { // Response huge page
           io.rsp.valid := true.B
           io.rsp.bits := pte
+          io.rsp.bits.ppn.p1 := req.p1
           io.rsp.bits.V := !pte.ppn.p1.orR // Test error? : Not 4M aligned
           when(io.rsp.ready) { // ack
             status := sIdle
@@ -90,7 +93,7 @@ class PTW extends Module {
         }.otherwise {
           // Memory access for P1
           io.mem.mode := RAMMode.LW
-          io.mem.addr := pte.ppn.toAddr(io.req.bits.p1 << 2.U)
+          io.mem.addr := pte.ppn.toAddr(req.p1 << 2.U)
           status := sWait1
         }
       }

@@ -45,7 +45,7 @@ void check_paging() {
     assert(page_root[0x000] == make_pte(0x200, 0, PTE_VRWX),
         "Failed to write root page table");
 
-    assert(*((u32*)0) == *((u32*)0x80000000),
+    assert(*((u32*)0x1000) == *((u32*)0x80001000),
         "Failed to read data from new mapped page");
 }
 

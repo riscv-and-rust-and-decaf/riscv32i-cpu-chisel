@@ -214,11 +214,11 @@ class MonitorTester extends ChiselFlatSpec {
   }
 }
 
-class CoreAsmTester extends ChiselFlatSpec {
+class MMUTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv")
-  "monitor" should "pass test" in {
+  "page table" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-      c => new CoreTestNew(c, "test_asm/pagetable.bin", 2000)
+      c => new CoreTestNew(c, "test_asm/pagetable.bin", 1500)
     } should be (true)
   }
 }
