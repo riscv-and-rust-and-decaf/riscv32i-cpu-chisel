@@ -52,12 +52,14 @@ class EX extends Module {
   io.mem.ramOp.addr := aluRes
   io.mem.ramOp.mode := MuxLookup(opt, RAMMode.NOP, Seq(
     OptCode.LW  -> RAMMode.LW,
-    OptCode.SW  -> RAMMode.SW,
     OptCode.LB  -> RAMMode.LB,
     OptCode.LBU -> RAMMode.LBU,
-    OptCode.SB  -> RAMMode.SB,
     OptCode.LH  -> RAMMode.LH,
-    OptCode.LHU -> RAMMode.LHU))
+    OptCode.LHU -> RAMMode.LHU,
+    OptCode.SW  -> RAMMode.SW,
+    OptCode.SH  -> RAMMode.SH,
+    OptCode.SB  -> RAMMode.SB
+  ))
   io.mem.ramOp.wdata := store_data
 
   //------------------- CSR ----------------------
