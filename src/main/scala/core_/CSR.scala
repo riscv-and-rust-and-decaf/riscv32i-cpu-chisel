@@ -10,7 +10,7 @@ class CSR extends Module {
     val mem = Flipped(new MEM_CSR)
     val mmu = new CSR_MMU
 
-    val flush = Output(Bool())
+    val flush = Output(Bool())  // Tell modules to clear registers at NEXT cycle
     val csrNewPc = Output(UInt(32.W))
   })
 
@@ -128,8 +128,6 @@ class CSR extends Module {
     }
   }
 
-  val excep = RegNext(io.mem.excep)
-
   // Alias
   val mepc = csr(ADDR.mepc)
   val sepc = csr(ADDR.sepc)
@@ -146,11 +144,15 @@ class CSR extends Module {
     Priv.U  -> mstatus.UIE
   ))
 
+  io.flush := io.mem.excep.valid
+  io.csrNewPc := 0.U
+
   // Handle exception from MEM at the same cycle
   when(io.mem.excep.valid) {
+    val cause = io.mem.excep.code
     // xRet
-    when(Cause.isRet(io.mem.excep.code)) {
-      val x = Cause.retX(io.mem.excep.code)
+    when(Cause.isRet(cause)) {
+      val x = Cause.retX(cause)
       // prv <- xPP
       // xIE <- xPIE
       // xPIE <- 1
@@ -176,8 +178,12 @@ class CSR extends Module {
           mstatus.UPIE := 1.U
         }
       }
+      io.csrNewPc := MuxLookup(Cause.retX(cause), 0.U , Seq(
+        Priv.M -> mepc,
+        Priv.S -> sepc,
+        Priv.U -> uepc
+      ))
     }.otherwise { // Exception
-      val cause = io.mem.excep.code
       val ePc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
       switch(newMode) {
         is(Priv.M) {
@@ -196,21 +202,6 @@ class CSR extends Module {
         }
       }
       prv := newMode
-    }
-  }
-
-  io.csrNewPc := 0.U
-  io.flush := excep.valid
-
-  when(excep.valid) {
-    when(Cause.isRet(excep.code)) {
-      printf("xRet")
-      io.csrNewPc := MuxLookup(Cause.retX(excep.code), 0.U , Seq(
-        Priv.M -> mepc,
-        Priv.S -> sepc,
-        Priv.U -> uepc
-      ))
-    }.otherwise { // Exception
       val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
       io.csrNewPc := Mux(mtvec(1,0) === 0.U,
         pcA4,

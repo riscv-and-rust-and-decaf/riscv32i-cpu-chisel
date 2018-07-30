@@ -35,13 +35,12 @@ class MEM extends Module {
   io.mmu.wdata := ramOp.wdata
   io.mmu.mode  := ramOp.mode
 
-  io.reg.addr := Mux(stall, 0.U, reg.addr)
+  io.reg.addr := reg.addr
   io.reg.rdy  := true.B
   io.reg.data := Mux(RAMMode.isRead(ramOp.mode), io.mmu.rdata, reg.data)
 
   io.csr.wrCSROp := wrCSROp
   io.csr.excep := excep
-  io.csr.excep.valid_inst := excep.valid_inst && !stall
 
   // PageFault
   when(io.mmu.pageFault) {
@@ -60,7 +59,15 @@ class MEM extends Module {
     io.mmu.mode := RAMMode.NOP
   }
 
-  // Handle flush, at current cycle
+  // Stall, output null
+  when(stall) {
+    io.csr.excep.valid_inst := false.B
+    io.csr.excep.valid := false.B
+    io.csr.wrCSROp.valid := false.B
+    io.reg.addr := 0.U
+  }
+
+  // Handle flush
   when(io.flush) {
     excep.valid := false.B
     excep.valid_inst := false.B
