@@ -107,6 +107,17 @@ object Cause {
   val InstPageFault          = 12.U
   val LoadPageFault          = 13.U
   val StorePageFault         = 15.U
+
+  // Internal use
+  val URet                   = 16.U
+  val SRet                   = 17.U
+  val MRet                   = 19.U
+
+  // Helper
+  def ecallX(prv: UInt) = 8.U | prv(1, 0)
+  def xRet(prv: UInt) = 16.U | prv(1, 0)
+  def isRet(cause: UInt) = cause(31,2) === 16.U(32.W)(31,2)
+  def retX(cause: UInt) = cause(1,0)
 }
 
 object InstType {

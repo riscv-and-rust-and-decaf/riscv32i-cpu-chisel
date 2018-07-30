@@ -66,10 +66,8 @@ class EX extends Module {
 
   val excep   = RegNext(io.id.excep)
   val wrCSROp = RegNext(io.id.wrCSROp)
-  val xRet    = RegNext(io.id.xRet)
   io.mem.excep   := excep
   io.mem.wrCSROp := wrCSROp
-  io.mem.xRet    := xRet
 
   //----------------- status ---------------------
 

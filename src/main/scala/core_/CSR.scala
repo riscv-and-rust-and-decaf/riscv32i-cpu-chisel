@@ -106,6 +106,7 @@ class CSR extends Module {
 
   val mstatus = RegInit(0.U.asTypeOf(new MStatus))
 
+  // Read CSR from ID
   io.id.rdata := MuxLookup(io.id.addr, csr(io.id.addr), Seq(
     ADDR.mvendorid -> mvendorid,
     ADDR.marchid -> marchid,
@@ -113,7 +114,9 @@ class CSR extends Module {
     ADDR.mhartid -> mhartid,
     ADDR.mstatus -> mstatus.asUInt
   ))
+  io.id.prv := prv
 
+  // Write CSR from MEM
   when(io.mem.wrCSROp.valid) {
     for(i <- csr_ids) {
       when(i === io.mem.wrCSROp.addr) {
@@ -125,14 +128,7 @@ class CSR extends Module {
     }
   }
 
-  //val pc = Wire(UInt(32.W))
-  //val excep = Wire(Bool())
-  val excep = RegInit(false.B)
-  val xRet  = RegInit(false.B)
-  val xRet_x = RegInit(Priv.M)
-
-  excep := false.B
-  xRet := false.B
+  val excep = RegNext(io.mem.excep)
 
   // Alias
   val mepc = csr(ADDR.mepc)
@@ -150,84 +146,77 @@ class CSR extends Module {
     Priv.U  -> mstatus.UIE
   ))
 
-  when(io.mem.excep.valid && ( newMode > prv || (newMode === prv && ie))) {
-    excep  := true.B
-
-    val cause = Mux(io.mem.excep.code === 8.U,
-      io.mem.excep.code + prv,
-      io.mem.excep.code)
-    val ePc = io.mem.excep.pc + 4.U //TODO: May not +4
-
-    switch(newMode) {
-      is(Priv.M) {
-        mstatus.MPP := prv
-        mepc := ePc
-        mcause := cause
-      }
-      is(Priv.S) {
-        mstatus.SPP := (prv === Priv.S)
-        sepc := ePc
-        scause := cause
-      }
-      is(Priv.U) {
-        uepc := ePc
-        ucause := cause
-      }
-    }
-    prv := newMode
-
-  }
-  .elsewhen(io.mem.xRet.valid && (io.mem.xRet.bits <= prv)) {
-    xRet := true.B
-    val x = io.mem.xRet.bits
-    xRet_x := x
-    // prv<- xPP
-    // xIE <- xPIE
-    // xPIE <- 1
-    // xPP <- U
-    prv := MuxLookup(x, 0.U, Seq(
-      Priv.M  -> mstatus.MPP,
-      Priv.S  -> mstatus.SPP,
-      Priv.U  -> Priv.U
+  // Handle exception from MEM at the same cycle
+  when(io.mem.excep.valid) {
+    // xRet
+    when(Cause.isRet(io.mem.excep.code)) {
+      val x = Cause.retX(io.mem.excep.code)
+      // prv <- xPP
+      // xIE <- xPIE
+      // xPIE <- 1
+      // xPP <- U
+      prv := MuxLookup(x, 0.U, Seq(
+        Priv.M  -> mstatus.MPP,
+        Priv.S  -> mstatus.SPP,
+        Priv.U  -> Priv.U
       ))
-    switch(x) {
-      is(Priv.M) {
-        mstatus.MIE := mstatus.MPIE
-        mstatus.MPIE := 1.U
-        mstatus.MPP := Priv.U
+      switch(x) {
+        is(Priv.M) {
+          mstatus.MIE := mstatus.MPIE
+          mstatus.MPIE := 1.U
+          mstatus.MPP := Priv.U
+        }
+        is(Priv.S) {
+          mstatus.SIE := mstatus.SPIE
+          mstatus.SPIE := 1.U
+          mstatus.SPP := 0.U
+        }
+        is(Priv.U) {
+          mstatus.UIE := mstatus.MPIE
+          mstatus.UPIE := 1.U
+        }
       }
-      is(Priv.S) {
-        mstatus.SIE := mstatus.SPIE
-        mstatus.SPIE := 1.U
-        mstatus.SPP := 0.U
+    }.otherwise { // Exception
+      val cause = io.mem.excep.code
+      val ePc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
+      switch(newMode) {
+        is(Priv.M) {
+          mstatus.MPP := prv
+          mepc := ePc
+          mcause := cause
+        }
+        is(Priv.S) {
+          mstatus.SPP := (prv === Priv.S)
+          sepc := ePc
+          scause := cause
+        }
+        is(Priv.U) {
+          uepc := ePc
+          ucause := cause
+        }
       }
-      is(Priv.U) {
-        mstatus.UIE := mstatus.MPIE
-        mstatus.UPIE := 1.U
-      }
+      prv := newMode
     }
   }
-
 
   io.csrNewPc := 0.U
-  io.flush := false.B
+  io.flush := excep.valid
 
-  when(excep) {
-    io.flush := true.B
-    val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
-    io.csrNewPc := Mux(mtvec(1,0) === 0.U,
-      pcA4,
-      pcA4 + 4.U * mcause
+  when(excep.valid) {
+    when(Cause.isRet(excep.code)) {
+      printf("xRet")
+      io.csrNewPc := MuxLookup(Cause.retX(excep.code), 0.U , Seq(
+        Priv.M -> mepc,
+        Priv.S -> sepc,
+        Priv.U -> uepc
+      ))
+    }.otherwise { // Exception
+      val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
+      io.csrNewPc := Mux(mtvec(1,0) === 0.U,
+        pcA4,
+        pcA4 + 4.U * mcause
       )
-  }
-  .elsewhen(xRet) {
-    printf("xRet")
-    io.flush := true.B
-    io.csrNewPc := MuxLookup(xRet_x, 0.U , Seq(
-      Priv.M -> mepc,
-      Priv.S -> sepc,
-      Priv.U -> uepc
-    ))
+    }
   }
 
   //------------------- MMU ----------------------

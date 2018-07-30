@@ -8,50 +8,39 @@ class MEM extends Module {
     val ex  = Flipped(new EX_MEM)
     val mmu = new MMUOp
     val csr = new MEM_CSR
-   
-    val wrRegOp   = new WrRegOp
+    val reg = new WrRegOp
 
     val flush = Input(Bool())
   })
 
   // Lock input
-  val ramOp       = RegInit(0.U.asTypeOf(new RAMOp_Output))
-  val wregAddr    = RegInit(0.U(32.W))
-  val exWrRegData = RegInit(0.U(32.W))
+  val ramOp   = RegInit(0.U.asTypeOf(new RAMOp_Output))
+  val reg     = RegInit(0.U.asTypeOf(new WrRegOp))
+  val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
+  val excep   = RegInit(0.U.asTypeOf(new Exception))
 
   // Stall
   val stall = ramOp.mode =/= RAMMode.NOP && !io.mmu.ok
+  io.ex.ready := !stall
 
   when(!stall) {
     ramOp := io.ex.ramOp
-    wregAddr := io.ex.wrRegOp.addr
-    exWrRegData := io.ex.wrRegOp.data
+    reg := io.ex.wrRegOp
+    wrCSROp := io.ex.wrCSROp
+    excep := io.ex.excep
   }
 
+  // Default Output
   io.mmu.addr  := ramOp.addr
   io.mmu.wdata := ramOp.wdata
   io.mmu.mode  := ramOp.mode
 
-  // Output
-  io.wrRegOp.addr := Mux(stall, 0.U, wregAddr)
-  io.wrRegOp.rdy  := true.B
-  io.wrRegOp.data := Mux(RAMMode.isRead(ramOp.mode), io.mmu.rdata, exWrRegData)
+  io.reg.addr := Mux(stall, 0.U, reg.addr)
+  io.reg.rdy  := true.B
+  io.reg.data := Mux(RAMMode.isRead(ramOp.mode), io.mmu.rdata, reg.data)
 
-  io.ex.ready := !stall
-
-  //------------------- CSR ----------------------
-
-  val wrCSROp = RegInit(0.U.asTypeOf(new WrCSROp))
-  val excep   = RegInit(0.U.asTypeOf(new Exception))
-  val xRet    = RegInit(0.U.asTypeOf(new Valid(UInt(2.W))))
-  when(!stall) {
-    wrCSROp := io.ex.wrCSROp
-    excep := io.ex.excep
-    xRet := io.ex.xRet
-  }
   io.csr.wrCSROp := wrCSROp
   io.csr.excep := excep
-  io.csr.xRet := xRet
   io.csr.excep.valid_inst := excep.valid_inst && !stall
 
   // PageFault
@@ -60,19 +49,25 @@ class MEM extends Module {
     io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
   }
 
+  // Handle Exception
+  when(io.csr.excep.valid) {
+    io.reg.addr := 0.U
+    io.csr.wrCSROp.valid := false.B
+    //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
+  }
+  when(excep.valid) {
+    // Avoid combinational loop
+    io.mmu.mode := RAMMode.NOP
+  }
+
+  // Handle flush, at current cycle
   when(io.flush) {
     excep.valid := false.B
     excep.valid_inst := false.B
-    wregAddr := 0.U
+    reg.addr := 0.U
     wrCSROp.valid := false.B
     ramOp.mode := RAMMode.NOP
     //printf("[MEM] ! exception come, flushed (0x%x)\n", excepPc)
-  }
-  when(excep.valid) {
-    io.wrRegOp.addr := 0.U
-    io.csr.wrCSROp.valid := false.B
-    io.mmu.mode := RAMMode.NOP
-    //printf("[MEM] ! Exception Pc: 0x%x Excep: %d\n", excepPc, excepEn)
   }
 
   //printf("[MEM] Pc: 0x%x (WrRegAddr) [%d <- %d]\n", excepPc, io.wrRegOp.addr, io.wrRegOp.data)

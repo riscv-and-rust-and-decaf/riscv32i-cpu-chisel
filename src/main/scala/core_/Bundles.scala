@@ -95,7 +95,6 @@ class ID_EX_Output extends Bundle {
   val aluOp      = Output(new ALUOp)
   val wrRegOp    = Output(new WrRegOp)
   val wrCSROp    = Output(new WrCSROp)
-  val xRet       = Output(Valid(UInt(2.W)))
   var store_data = Output(UInt(32.W)) // for Store Inst only
   val excep      = Output(new Exception)
 }
@@ -108,7 +107,6 @@ class EX_MEM extends Bundle {
   val ramOp   = Output(new RAMOp_Output)
   val wrRegOp = Output(new WrRegOp)
   val wrCSROp = Output(new WrCSROp)
-  val xRet    = Output(Valid(UInt(2.W)))
   val excep   = new Exception
   var ready   = Input(Bool())
 }
@@ -116,12 +114,12 @@ class EX_MEM extends Bundle {
 class MEM_CSR extends Bundle {
   val wrCSROp = Output(new WrCSROp)
   val excep   = Output(new Exception)
-  val xRet    = Output(Valid(UInt(2.W)))
 }
 
 class ID_CSR extends Bundle {
   val addr  = Output(UInt(12.W))
   val rdata = Input(UInt(32.W))
+  val prv   = Input(UInt(2.W))
 }
 
 class Exception extends Bundle {

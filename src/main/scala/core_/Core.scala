@@ -29,14 +29,14 @@ class Core extends Module {
   iff.io.id        <> id.io.iff
   id.io.ex         <> ex.io.id
   ex.io.mem        <> mem.io.ex
-  mem.io.wrRegOp   <> reg.io.mem
+  mem.io.reg       <> reg.io.mem
   mem.io.csr       <> csr.io.mem
 
   // ID read Reg & forwarding
   id.io.reg        <> reg.io.id
   id.io.csr        <> csr.io.id 
   id.io.exWrRegOp  <> ex.io.mem.wrRegOp
-  id.io.memWrRegOp <> mem.io.wrRegOp
+  id.io.memWrRegOp <> mem.io.reg
   id.io.exWrCSROp  <> ex.io.mem.wrCSROp
   id.io.memWrCSROp <> mem.io.csr.wrCSROp
 

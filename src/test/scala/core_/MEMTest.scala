@@ -17,8 +17,8 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
   poke(mem.io.mmu.ok, 0)
   
   step(1)
-  expect(mem.io.wrRegOp.addr, 10)
-  expect(mem.io.wrRegOp.data, 44)
+  expect(mem.io.reg.addr, 10)
+  expect(mem.io.reg.data, 44)
   expect(mem.io.mmu.mode, RAMMode.NOP)
   expect(mem.io.ex.ready, true)
 
@@ -38,7 +38,7 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
   poke(mem.io.ex.ramOp.addr, 44)
   step(1)
   poke(mem.io.mmu.ok, 0)
-  expect(mem.io.wrRegOp.addr, 0)
+  expect(mem.io.reg.addr, 0)
   expect(mem.io.ex.ready, false)
 
   //   Should keep last input when stall
@@ -50,8 +50,8 @@ class MEMTest(mem: MEM) extends PeekPokeTester(mem) {
 
   poke(mem.io.mmu.ok, 1)
   poke(mem.io.mmu.rdata, 4321)
-  expect(mem.io.wrRegOp.addr, 10)
-  expect(mem.io.wrRegOp.data, 4321)
+  expect(mem.io.reg.addr, 10)
+  expect(mem.io.reg.data, 4321)
   expect(mem.io.ex.ready, true)
 }
 

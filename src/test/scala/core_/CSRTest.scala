@@ -20,13 +20,6 @@ class ECALLTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   expect(c.d.reg(30), 30)
 }
 
-class ERETest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
-  step(100)
-  expect(c.d.reg(1), 5)
-  expect(c.d.reg(30), 7)
-
-}
-
 class CoreCSRTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv")
   "Core simple csr test" should "pass test" in {
@@ -34,23 +27,15 @@ class CoreCSRTester extends ChiselFlatSpec {
       c => new CSRInstTest(c, "test_asm/test_csr.bin")
     } should be (true)
   }
-}
-
-class CoreECALLTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
   "Core ecall test" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule()) {
       c => new ECALLTest(c, "test_asm/test_ecall.bin")
     } should be (true)
   }
-}
-
-class CoreERETTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
-  "Core eret test" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new ERETest(c, "test_asm/test_ret.bin")
-    }
+  "eret" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
+      c => new CoreTestNew(c, "test_asm/test_ret.bin", 100)
+    } should be (true)
   }
 }
 

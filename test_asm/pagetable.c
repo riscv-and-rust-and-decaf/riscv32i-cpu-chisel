@@ -15,8 +15,9 @@ make_pte(u32 p2, u32 p1, u32 flags) {
     return (p2 << 20) | (p1 << 10) | flags;
 }
 
-pte_t* const page_root = (pte_t*)0x80001000;
-pte_t* const page1     = (pte_t*)0x80002000;
+volatile pte_t* const page_root = (pte_t*)0x80001000;
+volatile pte_t* const page1     = (pte_t*)0x80002000;
+volatile pte_t* const virt_root = (pte_t*)0xffffe000;
 
 void enable_page_table() {
 //    for(int i=0; i<0x1000; ++i)
@@ -37,7 +38,6 @@ void enable_page_table() {
 }
 
 void check_paging() {
-    pte_t* const virt_root = (pte_t*)0xffffe000;
     assert(virt_root[0x200] == page_root[0x200],
         "Failed to access root page table from 0xffffe000");
 

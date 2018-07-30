@@ -103,7 +103,6 @@ class ID extends Module {
   io.ex.aluOp.opt := decRes(DecTable.OPT)
   io.ex.wrCSROp := 0.U.asTypeOf(new WrCSROp)
   io.ex.wrRegOp := 0.U.asTypeOf(new WrRegOp)
-  io.ex.xRet := 0.U.asTypeOf(Valid(UInt(32.W)))
   io.ex.excep := excep
   io.ex.excep.valid_inst := excep.valid_inst && !stall
   io.ex.store_data := 0.U
@@ -208,19 +207,23 @@ class ID extends Module {
         }
         .otherwise {
           val inst_p2 = inst(24,20)
-          switch(inst_p2) {
-            is(SYS_INST_P2.ECALL) {
-              when(!excep.valid) {
+          when(!excep.valid) {
+            switch(inst_p2) {
+              is(SYS_INST_P2.ECALL) {
                 io.ex.excep.valid := true.B
-                io.ex.excep.code := Cause.ECallU
+                io.ex.excep.code := Cause.ecallX(io.csr.prv)
               }
-            }
-            is(SYS_INST_P2.EBREAK) {
-              //TODO
-            }
-            is(SYS_INST_P2.xRET) {
-              io.ex.xRet.valid := true.B
-              io.ex.xRet.bits := inst(29,28)
+              is(SYS_INST_P2.EBREAK) {
+                io.ex.excep.valid := true.B
+                io.ex.excep.code := Cause.BreakPoint
+              }
+              is(SYS_INST_P2.xRET) {
+                val prv = inst(29,28)
+                io.ex.excep.valid := true.B
+                io.ex.excep.code := Mux(prv >= io.csr.prv, // prv ok ?
+                  Cause.xRet(prv),
+                  Cause.IllegalInstruction)
+              }
             }
           }
         }
