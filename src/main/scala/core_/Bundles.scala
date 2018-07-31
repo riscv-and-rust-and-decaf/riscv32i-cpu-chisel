@@ -43,6 +43,10 @@ class RAMOp_Output extends Bundle {
   val addr  = Output(UInt(32.W))
   val mode  = Output(UInt(4.W))   // Consts.scalaRAMMode.XX
   val wdata = Output(UInt(32.W))
+
+  def misaligned =
+    RAMMode.is16(mode) && addr(0) ||
+    RAMMode.is32(mode) && addr(1,0).orR
 }
 
 // Full IO interface
@@ -125,6 +129,7 @@ class ID_CSR extends Bundle {
 class Exception extends Bundle {
   val valid = Output(Bool())
   val code  = Output(UInt(32.W))
+  val value = Output(UInt(32.W))
   val pc    = Output(UInt(32.W))
   val valid_inst = Output(Bool())
 }

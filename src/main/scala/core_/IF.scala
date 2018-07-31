@@ -47,10 +47,12 @@ class IF extends Module {
     io.id.excep.valid_inst := true.B
     when(pc(1,0).orR) {
       io.id.excep.valid := true.B
+      io.id.excep.value := pc
       io.id.excep.code := Cause.InstAddressMisaligned
     }
     when(io.mmu.pageFault) {
       io.id.excep.valid := true.B
+      io.id.excep.value := pc
       io.id.excep.code := Cause.InstPageFault
     }
   }

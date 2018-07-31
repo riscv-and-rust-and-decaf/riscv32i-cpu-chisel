@@ -20,8 +20,11 @@ object RAMMode {
   val SH  = "b1010".U
   val SB  = "b1100".U
 
-  def isRead(x: UInt): Bool = !x(3) && x.orR
+  def isRead(x: UInt): Bool  = !x(3) && x.orR
   def isWrite(x: UInt): Bool = x(3)
+  def is32(x: UInt): Bool    = x(2,0) === "b001".U
+  def is16(x: UInt): Bool    = x(1)
+  def is8(x: UInt): Bool     = x(2)
 }
 
 object CSRMODE {

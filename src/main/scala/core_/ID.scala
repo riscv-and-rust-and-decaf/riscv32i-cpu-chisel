@@ -246,6 +246,7 @@ class ID extends Module {
       is(InstType.BAD) {
         when(!excep.valid) {
           io.ex.excep.valid := true.B
+          io.ex.excep.value := inst
           io.ex.excep.code := Cause.IllegalInstruction
         }
       }

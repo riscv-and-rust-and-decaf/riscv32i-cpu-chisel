@@ -184,23 +184,24 @@ class CSR extends Module {
         Priv.U -> uepc
       ))
     }.otherwise { // Exception
-      val ePc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
+      val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
       switch(newMode) {
         is(Priv.M) {
           mstatus.MPP := prv
-          mepc := ePc
+          mepc := epc
           mcause := cause
         }
         is(Priv.S) {
           mstatus.SPP := (prv === Priv.S)
-          sepc := ePc
+          sepc := epc
           scause := cause
         }
         is(Priv.U) {
-          uepc := ePc
+          uepc := epc
           ucause := cause
         }
       }
+      csr(ADDR.mtval) := io.mem.excep.value
       prv := newMode
       val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
       io.csrNewPc := Mux(mtvec(1,0) === 0.U,
