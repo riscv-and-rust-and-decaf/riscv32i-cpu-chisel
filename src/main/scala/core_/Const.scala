@@ -115,6 +115,7 @@ object Cause {
   val URet                   = 16.U
   val SRet                   = 17.U
   val MRet                   = 19.U
+  val SFence                 = 20.U
 
   // Helper
   def ecallX(prv: UInt) = 8.U | prv(1, 0)
@@ -268,4 +269,9 @@ object SYS_INST_P2 { // bits(24:20)
   def SRET   = "b0001000000100000000000000".U
   def MRET   = "b0011000000100000000000000".U
 */
+}
+
+object SYS_INST_P1 { //bits(31:25)
+  def SFENCE_VMA = "b0001001".U
+
 }

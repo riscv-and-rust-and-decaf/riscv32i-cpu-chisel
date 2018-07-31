@@ -218,6 +218,16 @@ class ID extends Module {
           io.ex.wrRegOp.addr := rdAddr
           io.ex.aluOp.rd1    := csrVal
         }
+        .elsewhen(inst(31,25) === SYS_INST_P1.SFENCE_VMA) {
+          when(!excep.valid) {
+            io.ex.excep.valid := true.B
+            io.ex.excep.value := rs1Val
+            io.ex.excep.code := Mux(io.csr.prv >= Priv.S,
+              Cause.SFence,
+              Cause.IllegalInstruction)
+          }
+
+        }
         .otherwise {
           val inst_p2 = inst(24,20)
           when(!excep.valid) {

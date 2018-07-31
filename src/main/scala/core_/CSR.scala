@@ -177,6 +177,9 @@ class CSR extends Module {
         Priv.S -> sepc,
         Priv.U -> uepc
       ))
+    }.elsewhen(cause === Cause.SFence) {
+      io.csrNewPc := io.mem.excep.pc + 4.U
+      //TODO: flush TLB
     }.otherwise { // Exception
       val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
       switch(newMode) {
