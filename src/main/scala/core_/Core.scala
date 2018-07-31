@@ -53,6 +53,9 @@ class Core extends Module {
   ex.io.flush := csr.io.flush
   mem.io.flush := csr.io.flush
 
+  // external interrupt
+  csr.io.external_inter := 0.U.asTypeOf(Valid(UInt(32.W))) //fake 
+
   // all the fxxking debug things... fxxk chisel
   val d = io.debug
   d.reg       <> reg.io.log

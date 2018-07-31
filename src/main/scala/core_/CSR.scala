@@ -12,6 +12,8 @@ class CSR extends Module {
 
     val flush = Output(Bool())  // Tell modules to clear registers at NEXT cycle
     val csrNewPc = Output(UInt(32.W))
+
+    val external_inter = Input(Valid(UInt(32.W)))
   })
 
   val prv = RegInit(Priv.M)
@@ -136,6 +138,7 @@ class CSR extends Module {
   val scause = csr(ADDR.scause)
   val ucause = csr(ADDR.ucause)
   val mtvec = csr(ADDR.mtvec)
+  val mie   = csr(ADDR.mie)
 
   val newMode = Priv.M //TODO: S-mode Trap
   val ie = MuxLookup(prv, false.B, Seq(
@@ -143,13 +146,39 @@ class CSR extends Module {
     Priv.S  -> mstatus.SIE,
     Priv.U  -> mstatus.UIE
   ))
+  val have_excep = Wire(Bool())
+  have_excep := io.mem.excep.valid
+  val cause = Wire(UInt(32.W))
+  cause := io.mem.excep.code
+  val inter_code = Wire(UInt(32.W))
+  inter_code := io.external_inter.bits
 
-  io.flush := io.mem.excep.valid
+  //interrupt
+
+  val inter_enable = (newMode > prv) || ((newMode === prv) && ie)
+  //time_inter
+  val mtime = RegInit(0.U(64.W))
+  val mtimecmp = RegInit(0.U(64.W))
+  mtime := mtime + 1.U
+
+  val xTIE = mie(newMode + 4.U)
+  val time_inter = (mtime >= mtimecmp) && xTIE
+  when(time_inter && !io.external_inter.valid) {
+    inter_code := (Cause.Interrupt << 31) + Cause.UTI + prv
+    }
+
+  val inter = inter_enable && (time_inter || io.external_inter.valid)
+
+  when(!io.mem.excep.valid) {
+    have_excep := inter
+    cause := inter_code
+  }
+
+  io.flush := have_excep
   io.csrNewPc := 0.U
 
   // Handle exception from MEM at the same cycle
-  when(io.mem.excep.valid) {
-    val cause = io.mem.excep.code
+  when(have_excep) {
     // xRet
     when(Cause.isRet(cause)) {
       val x = Cause.retX(cause)
@@ -183,7 +212,7 @@ class CSR extends Module {
         Priv.S -> sepc,
         Priv.U -> uepc
       ))
-    }.otherwise { // Exception
+    }.otherwise { // Exception or Interrupt
       val ePc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
       switch(newMode) {
         is(Priv.M) {
