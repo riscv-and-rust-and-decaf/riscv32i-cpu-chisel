@@ -20,6 +20,12 @@ class ECALLTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
   expect(c.d.reg(30), 30)
 }
 
+class TimeTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+  step(249)
+  expect(c.d.reg(1), 4)
+  expect(c.d.reg(7), 2147483652L.U)
+}
+
 class CoreCSRTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv")
   "Core simple csr test" should "pass test" in {
@@ -35,6 +41,15 @@ class CoreCSRTester extends ChiselFlatSpec {
   "eret" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
       c => new CoreTestNew(c, "test_asm/test_ret.bin", 100)
+    } should be (true)
+  }
+}
+
+class TimeInterruptTester extends ChiselFlatSpec {
+  val args = Array[String]("-fiwv")
+  "time interupt" should "pass test" in {
+    iotesters.Driver.execute(args, () => new CoreTestModule()) {
+      c => new TimeTest(c, "test_asm/test_mtime.bin")
     } should be (true)
   }
 }
