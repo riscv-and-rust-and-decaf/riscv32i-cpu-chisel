@@ -20,7 +20,7 @@ class MEM extends Module {
   val excep   = RegInit(0.U.asTypeOf(new Exception))
 
   // Stall
-  val stall = ramOp.mode =/= RAMMode.NOP && !io.mmu.ok
+  val stall = io.mmu.mode =/= RAMMode.NOP && !io.mmu.ok
   io.ex.ready := !stall
 
   when(!stall) {
@@ -42,10 +42,23 @@ class MEM extends Module {
   io.csr.wrCSROp := wrCSROp
   io.csr.excep := excep
 
-  // PageFault
-  when(io.mmu.pageFault) {
-    io.csr.excep.valid := true.B
-    io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
+  // New exception
+  when(!excep.valid) {
+
+    // Address misaligned
+    when(ramOp.misaligned) {
+      io.mmu.mode := RAMMode.NOP
+      io.csr.excep.valid := true.B
+      io.csr.excep.value := ramOp.addr
+      io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadAddressMisaligned, Cause.StoreAddressMisaligned)
+    }
+
+    // PageFault
+    when(io.mmu.pageFault) {
+      io.csr.excep.valid := true.B
+      io.csr.excep.value := ramOp.addr
+      io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
+    }
   }
 
   // Handle Exception

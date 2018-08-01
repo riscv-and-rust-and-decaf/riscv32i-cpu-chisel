@@ -20,8 +20,11 @@ object RAMMode {
   val SH  = "b1010".U
   val SB  = "b1100".U
 
-  def isRead(x: UInt): Bool = !x(3) && x.orR
+  def isRead(x: UInt): Bool  = !x(3) && x.orR
   def isWrite(x: UInt): Bool = x(3)
+  def is32(x: UInt): Bool    = x(2,0) === "b001".U
+  def is16(x: UInt): Bool    = x(1)
+  def is8(x: UInt): Bool     = x(2)
 }
 
 object CSRMODE {
@@ -112,6 +115,7 @@ object Cause {
   val URet                   = 16.U
   val SRet                   = 17.U
   val MRet                   = 19.U
+  val SFence                 = 20.U
 
   // Helper
   def ecallX(prv: UInt) = 8.U | prv(1, 0)
@@ -265,4 +269,9 @@ object SYS_INST_P2 { // bits(24:20)
   def SRET   = "b0001000000100000000000000".U
   def MRET   = "b0011000000100000000000000".U
 */
+}
+
+object SYS_INST_P1 { //bits(31:25)
+  def SFENCE_VMA = "b0001001".U
+
 }

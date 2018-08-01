@@ -5,6 +5,7 @@ _start:
 	lw x2, -4(x7)
 	fence
 	li x1, 6
+	sfence.vma
 	auipc x7,0
 	sw x2, 12(x7)
 	fence.i

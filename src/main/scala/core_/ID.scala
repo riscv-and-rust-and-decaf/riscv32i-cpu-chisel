@@ -121,16 +121,30 @@ class ID extends Module {
     instTypesUsingRs2.map(x => x === instType).reduce(_ || _)
   stall := (!io.exWrRegOp.rdy) && (io.exWrRegOp.addr.orR) && (rs1Hazard || rs2Hazard) || !io.ex.ready
 
+  // Check whether the jump target is misaligned.
+  // If true, raise an exception, otherwise set branch.
+  def checkAndJump(target: UInt): Unit = {
+    when(target(1,0).orR) { // misaligned
+      when(!excep.valid) {
+        io.ex.excep.valid := true.B
+        io.ex.excep.value := target
+        io.ex.excep.code := Cause.InstAddressMisaligned
+      }
+    }.otherwise {
+      io.iff.branch.bits := target
+      io.iff.branch.valid := true.B
+    }
+  }
+
   when (stall) {
     // flush current instruction
     io.ex.wrRegOp.addr := 0.U             // don't write registers
     io.ex.aluOp.opt := OptCode.ADD    // don't write memory
     io.iff.branch.valid := false.B // don't branch
     io.iff.ready := false.B     // tell IF not to advance
-  } 
-  .otherwise {
+  }.otherwise {
     io.iff.ready := true.B
-    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
+//    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
     switch(instType) {
       is(InstType.R) {
         io.ex.aluOp.rd1 := rs1Val
@@ -144,12 +158,10 @@ class ID extends Module {
         io.ex.wrRegOp.addr := rdAddr
 
         when(decRes(DecTable.OPT) === OptCode.JALR) {
-          io.iff.branch.bits := (imm.asUInt + rs1Val) & (~ 1.U(32.W))
-          io.iff.branch.valid  := true.B
-
+          checkAndJump((imm.asUInt + rs1Val) & (~ 1.U(32.W)))
           io.ex.aluOp.rd1 := pc
           io.ex.aluOp.rd2 := 4.U
-          io.ex.aluOp.opt   := OptCode.ADD
+          io.ex.aluOp.opt := OptCode.ADD
         }
       }
       is(InstType.S) {
@@ -159,15 +171,16 @@ class ID extends Module {
         io.ex.store_data := rs2Val
       }
       is(InstType.B) {
-        imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
-        io.iff.branch.bits := pc + imm.asUInt
         val bt = decRes(DecTable.OPT)
-        val l = Mux(bt(0), rs1Val.asSInt < rs2Val.asSInt, rs1Val < rs2Val)
-        val g = Mux(bt(0), rs1Val.asSInt > rs2Val.asSInt, rs1Val > rs2Val)
+        val l = Mux(bt(0), rs1Val < rs2Val, rs1Val.asSInt < rs2Val.asSInt)
+        val g = Mux(bt(0), rs1Val > rs2Val, rs1Val.asSInt > rs2Val.asSInt)
         val e = rs1Val === rs2Val
-        io.iff.branch.valid := (l & bt(3)) | (e & bt(2)) | (g & bt(1))
+        val jump = (l & bt(3)) | (e & bt(2)) | (g & bt(1))
 
-        io.ex.aluOp.opt := OptCode.ADD
+        imm := Cat( inst(31), inst(7), inst(30,25), inst(11,8), 0.U(1.W)).asSInt
+        when(jump) {
+          checkAndJump(pc + imm.asUInt)
+        }
 
         d.bt := bt
         d.l := l
@@ -182,12 +195,10 @@ class ID extends Module {
       }
       is(InstType.J) {
         imm := Cat(inst(31), inst(19,12), inst(20), inst(30,21), 0.U(1.W)).asSInt
-        io.iff.branch.bits := pc + imm.asUInt
-        io.iff.branch.valid  := true.B
-
+        checkAndJump(pc + imm.asUInt)
         io.ex.aluOp.rd1 := pc
         io.ex.aluOp.rd2 := 4.U
-        io.ex.aluOp.opt   := OptCode.ADD //not necessary
+        io.ex.aluOp.opt := OptCode.ADD //not necessary
         io.ex.wrRegOp.addr := rdAddr
       }
       is(InstType.SYS) {
@@ -206,6 +217,16 @@ class ID extends Module {
           io.ex.wrCSROp.data := newVal
           io.ex.wrRegOp.addr := rdAddr
           io.ex.aluOp.rd1    := csrVal
+        }
+        .elsewhen(inst(31,25) === SYS_INST_P1.SFENCE_VMA) {
+          when(!excep.valid) {
+            io.ex.excep.valid := true.B
+            io.ex.excep.value := rs1Val
+            io.ex.excep.code := Mux(io.csr.prv >= Priv.S,
+              Cause.SFence,
+              Cause.IllegalInstruction)
+          }
+
         }
         .otherwise {
           val inst_p2 = inst(24,20)
@@ -231,9 +252,7 @@ class ID extends Module {
         }
       }
       is(InstType.FENCE) {
-        printf("FENCE: %d\n", fenceICnt)
         when(inst(14,12) === "b001".U) { // FENCE.I
-          printf("work\n")
           when(fenceICnt === 3.U) {
             fenceICnt := 0.U
           }
@@ -248,6 +267,7 @@ class ID extends Module {
       is(InstType.BAD) {
         when(!excep.valid) {
           io.ex.excep.valid := true.B
+          io.ex.excep.value := inst
           io.ex.excep.code := Cause.IllegalInstruction
         }
       }
