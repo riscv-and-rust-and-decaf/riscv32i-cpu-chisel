@@ -57,6 +57,12 @@ class CSR extends Module {
     // U
     val uepc      = "h041".U
     val ucause    = "h042".U
+    val utval     = "h043".U
+    val utvec     = "h005".U
+
+    // emmmm..
+    val mtimecmp = "h321".U
+    val mtimecmph = "h322".U
   }
 
   val csr = Mem(0x400, UInt(32.W))
@@ -132,7 +138,15 @@ class CSR extends Module {
   val scause = csr(ADDR.scause)
   val ucause = csr(ADDR.ucause)
   val mtvec = csr(ADDR.mtvec)
+  val stvec = csr(ADDR.stvec)
+  val utvec = csr(ADDR.utvec)
+  val mtval = csr(ADDR.mtval)
+  val stval = csr(ADDR.stval)
+  val utval = csr(ADDR.utval)
+
   val mie   = csr(ADDR.mie)
+
+  val mtimecmp = Cat( csr(ADDR.mtimecmph), csr(ADDR.mtimecmp))
 
   val newMode = Priv.M //TODO: S-mode Trap
   val ie = MuxLookup(prv, false.B, Seq(
@@ -140,19 +154,15 @@ class CSR extends Module {
     Priv.S  -> mstatus.SIE,
     Priv.U  -> mstatus.UIE
   ))
-  val have_excep = Wire(Bool())
-  have_excep := io.mem.excep.valid
-  val cause = Wire(UInt(32.W))
-  cause := io.mem.excep.code
+
   val inter_code = Wire(UInt(32.W))
   inter_code := io.external_inter.bits
 
   //interrupt
 
-  val inter_enable = (newMode > prv) || ((newMode === prv) && ie)
+  val inter_enable = (newMode > prv) || ((newMode === prv) && ie) && io.mem.excep.valid_inst
   //time_inter
   val mtime = RegInit(0.U(64.W))
-  val mtimecmp = RegInit(0.U(64.W))
   mtime := mtime + 1.U
 
   val xTIE = mie(newMode + 4.U)
@@ -163,11 +173,14 @@ class CSR extends Module {
 
   val inter = inter_enable && (time_inter || io.external_inter.valid)
 
-  when(!io.mem.excep.valid) {
-    have_excep := inter
-    cause := inter_code
-  }
 
+  io.mem.inter.valid := inter
+  io.mem.inter.bits  := inter_code
+
+  val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
+  val have_excep = io.mem.excep.valid
+  val cause = io.mem.excep.code
+  
   io.flush := have_excep
   io.csrNewPc := 0.U
 
@@ -210,29 +223,42 @@ class CSR extends Module {
       io.csrNewPc := io.mem.excep.pc + 4.U
       //TODO: flush TLB
     }.otherwise { // Exception or Interrupt
-      val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
+      val valu = io.mem.excep.value
       switch(newMode) {
         is(Priv.M) {
           mstatus.MPP := prv
           mepc := epc
           mcause := cause
+          mtval := valu
         }
         is(Priv.S) {
           mstatus.SPP := (prv === Priv.S)
           sepc := epc
           scause := cause
+          stval := valu
         }
         is(Priv.U) {
           uepc := epc
           ucause := cause
+          utval := valu
         }
       }
-      csr(ADDR.mtval) := io.mem.excep.value
       prv := newMode
-      val pcA4 = Cat(mtvec(31,2), 0.U(2.W))
-      io.csrNewPc := Mux(mtvec(1,0) === 0.U,
+      val xtvec = MuxLookup(newMode, 0.U, Seq(
+        Priv.M -> mtvec,
+        Priv.S -> stvec,
+        Priv.U -> utvec
+        ))
+      val xcause = MuxLookup(newMode, 0.U, Seq(
+        Priv.M -> mcause,
+        Priv.S -> scause,
+        Priv.U -> ucause
+        ))
+        
+      val pcA4 = Cat(xtvec(31,2), 0.U(2.W))
+      io.csrNewPc := Mux(xtvec(1,0) === 0.U,
         pcA4,
-        pcA4 + 4.U * mcause
+        pcA4 + 4.U * xcause
       )
     }
   }

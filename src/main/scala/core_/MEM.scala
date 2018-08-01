@@ -28,6 +28,11 @@ class MEM extends Module {
     reg := io.ex.wrRegOp
     wrCSROp := io.ex.wrCSROp
     excep := io.ex.excep
+
+    when(io.csr.inter.valid && io.ex.excep.valid_inst) {
+      excep.valid := true.B
+      excep.code := io.csr.inter.bits
+    }
   }
 
   // Default Output
@@ -59,6 +64,8 @@ class MEM extends Module {
       io.csr.excep.value := ramOp.addr
       io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
     }
+  }.otherwise {
+    printf("!exception! Pc:0x%x Code:0x%x\n",excep.pc, excep.code)
   }
 
   // Handle Exception

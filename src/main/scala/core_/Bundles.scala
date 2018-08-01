@@ -118,6 +118,7 @@ class EX_MEM extends Bundle {
 class MEM_CSR extends Bundle {
   val wrCSROp = Output(new WrCSROp)
   val excep   = Output(new Exception)
+  val inter   = Input(Valid(UInt(32.W)))
 }
 
 class ID_CSR extends Bundle {
