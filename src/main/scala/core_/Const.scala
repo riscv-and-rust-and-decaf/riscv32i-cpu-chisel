@@ -120,6 +120,8 @@ object Cause {
   // Helper
   def ecallX(prv: UInt) = 8.U | prv(1, 0)
   def xRet(prv: UInt) = 16.U | prv(1, 0)
+  def isRet(cause: UInt) = cause(31,2) === 16.U(32.W)(31,2)
+  def retX(cause: UInt) = cause(1,0)
 }
 
 object InstType {
