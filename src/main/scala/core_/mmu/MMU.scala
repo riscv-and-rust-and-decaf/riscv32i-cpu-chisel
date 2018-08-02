@@ -21,14 +21,15 @@ class MMU extends Module {
   // Only when `ready = 1`, satp change or TLB invalidation can be accepted at next cycle.
   val ready = io.iff.ready && io.mem.ready
 
-  val satp = RegInit(0.U(32.W))
+  val csr = RegInit(0.U.asTypeOf(new CSR_MMU()))
   when(ready) {
-    satp := io.csr.satp
+    csr := io.csr
   }
 
   // Enable MMU?
-  tlb.reset := !satp(31)
-  ptw.io.root := satp(19, 0).asTypeOf(new PN)
+  val enable = csr.satp(31) && csr.priv =/= Priv.M
+  tlb.reset := !enable
+  ptw.io.root := csr.satp(19, 0).asTypeOf(new PN)
 
   val null_device = Module(new NullDev)
   ptw.io.mem <> null_device.io
@@ -66,20 +67,20 @@ class MMU extends Module {
       // Not (valid and executable)
       !(rsp.bits.V && rsp.bits.X) ||
       // User restriction
-      io.csr.priv === Priv.U && !rsp.bits.U
+      csr.priv === Priv.U && !rsp.bits.U
     )
   }
   { // MEM
     val rsp = tlb.io.query2.rsp
     io.mem.pageFault := rsp.valid && io.mem.mode =/= RAMMode.NOP && (
       // Read
-      RAMMode.isRead(io.mem.mode) && !(rsp.bits.V && (rsp.bits.R || rsp.bits.X && io.csr.mxr)) ||
+      RAMMode.isRead(io.mem.mode) && !(rsp.bits.V && (rsp.bits.R || rsp.bits.X && csr.mxr)) ||
       // Write
       RAMMode.isWrite(io.mem.mode) && !(rsp.bits.V && rsp.bits.W) ||
       // User restriction
-      io.csr.priv === Priv.U && !rsp.bits.U ||
+      csr.priv === Priv.U && !rsp.bits.U ||
       // Access user in supervisor
-      io.csr.priv === Priv.S && !io.csr.sum && rsp.bits.U
+      csr.priv === Priv.S && !csr.sum && rsp.bits.U
     )
   }
 

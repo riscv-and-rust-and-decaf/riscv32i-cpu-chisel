@@ -144,7 +144,7 @@ class ID extends Module {
     io.iff.ready := false.B     // tell IF not to advance
   }.otherwise {
     io.iff.ready := true.B
-    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
+//    printf("Pc: 0x%x Inst:0x%x type: %d\n",pc, inst, instType)
     switch(instType) {
       is(InstType.R) {
         io.ex.aluOp.rd1 := rs1Val
@@ -243,7 +243,7 @@ class ID extends Module {
               is(SYS_INST_P2.xRET) {
                 val prv = inst(29,28)
                 io.ex.excep.valid := true.B
-                io.ex.excep.code := Mux(prv >= io.csr.prv, // prv ok ?
+                io.ex.excep.code := Mux(io.csr.prv >= prv,
                   Cause.xRet(prv),
                   Cause.IllegalInstruction)
               }

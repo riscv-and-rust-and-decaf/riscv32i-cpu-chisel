@@ -4,18 +4,16 @@ LD := $(ARCH_PREF)ld
 OBJDUMP := $(ARCH_PREF)objdump
 OBJCOPY := $(ARCH_PREF)objcopy
 
-TESTS := $(patsubst %, rv32mi-p-%, breakpoint csr illegal ma_addr ma_fetch mcsr sbreak scall shamt)\
-         $(patsubst %, rv32si-p-%, csr dirty ma_fetch sbreak scall wfi)
-OBJS := $(patsubst %, %, $(TESTS))
+TESTS := $(patsubst ./obj/%, %, $(wildcard ./obj/*))
 DUMPS := $(patsubst %, %.dump, $(TESTS))
 BINS := $(patsubst %, %.bin, $(TESTS))
 
 all: $(DUMPS) $(BINS)
 
-%.dump: %
+%.dump: ./obj/%
 	$(OBJDUMP) -D $^ > $@
 
-%.bin: %
+%.bin: ./obj/%
 	$(OBJCOPY) -O binary $^ $@
 
 clean:

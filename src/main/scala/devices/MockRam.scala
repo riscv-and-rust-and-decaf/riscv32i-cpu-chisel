@@ -47,12 +47,12 @@ class MockRam(printLog: Boolean = true) extends Module {
         printf("[RAM] LW: [%x]->%x\n", addr, io.rdata)
     }
     is(RAMMode.LH) {
-      io.rdata := Cat(Mux(data(15), 0xff.U, 0.U), data(15, 0))
+      io.rdata := Cat(Mux(data(15), 0xffff.U, 0.U), data(15, 0))
       if (printLog)
         printf("[RAM] LH: [%x]->%x\n", addr, io.rdata)
     }
     is(RAMMode.LB) {
-      io.rdata := Cat(Mux(data(7), 0xfff.U, 0.U), data(7, 0))
+      io.rdata := Cat(Mux(data(7), 0xffffff.U, 0.U), data(7, 0))
       if (printLog)
         printf("[RAM] LB: [%x]->%x\n", addr, io.rdata)
     }

@@ -1,5 +1,7 @@
 package core_
 
+import java.io.File
+
 import chisel3._
 import chisel3.iotesters._
 import devices._
@@ -245,17 +247,12 @@ class MMUTester extends ChiselFlatSpec {
 }
 
 class RiscvTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
-  val names =
-    Seq("breakpoint", "csr", "illegal", "ma_addr",
-      "ma_fetch", "mcsr", "sbreak", "scall", "shamt")
-      .map(x => "rv32mi-p-" + x) ++
-    Seq("csr", "dirty", "ma_fetch", "sbreak", "scall", "wfi")
-      .map(x => "rv32si-p-" + x)
+  val args = Array[String]("")
+  val names = new File("test_asm/riscv-test/obj").listFiles().map(f => f.getName)
   for(name <- names) {
     name should "pass test" in {
       iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 1000)
+        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 2000)
       } should be (true)
     }
   }

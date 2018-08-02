@@ -33,8 +33,8 @@ class MEM extends Module {
       excep.valid := true.B
       excep.code := io.csr.inter.bits
     }
-    printf("Pc:0x%x\n", io.ex.excep.pc)
-    printf("csr inter come? %d , valid? %d\n", io.csr.inter.valid, io.ex.excep.valid_inst);
+//    printf("Pc:0x%x\n", io.ex.excep.pc)
+//    printf("csr inter come? %d , valid? %d\n", io.csr.inter.valid, io.ex.excep.valid_inst);
   }
 
   // Default Output
