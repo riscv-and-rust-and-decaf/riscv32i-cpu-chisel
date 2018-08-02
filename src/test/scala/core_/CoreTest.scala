@@ -15,6 +15,7 @@ class CoreTestModule(trace: Boolean = true) extends Module {
     val ready    = Input(Bool())
     val ram_init = Flipped(new RAMOp())
     val debug    = new CoreState()
+    val d_ram    = new RAMOp_Output()
   })
   val d  = io.debug
 
@@ -35,6 +36,10 @@ class CoreTestModule(trace: Boolean = true) extends Module {
   ioCtrl.io.flash   <> flash.io
   ioCtrl.io.serial  <> serial.io
   d                 <> core.d
+  io.d_ram.addr := ram.io.addr
+  io.d_ram.mode := ram.io.mode
+  io.d_ram.wdata := ram.io.wdata
+
   core.reset := !io.ready
   ioCtrl.reset := !io.ready
   TestUtil.bindRAM(io.ready, io.ram_init, ioCtrl.io.ram, ram.io)
@@ -97,7 +102,14 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
 //              > 1 : Fail. Code = value / 2
 class RiscvTest(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTestNew(c, fname, max_cycles) {
   override def isFinished(): Boolean = {
-    val v = peekAt(c.ram.mem, 0x1000).toInt
+    // Workaround for verilator backend:
+    //    val v = peekAt(c.ram.mem, 0x1000).toInt
+    val addr = peek(c.io.d_ram.addr).toLong
+    val mode = peek(c.io.d_ram.mode).toInt
+    if(addr != 0x80001000L || mode < 8) {
+      return false
+    }
+    val v = peek(c.io.d_ram.wdata).toInt
     val code = v / 2
     if(code != 0) {
       expect(false, s"Error code: $code")
@@ -229,7 +241,7 @@ class CoreTester extends ChiselFlatSpec {
 }
 
 class MonitorTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
+  val args = Array[String]("-fiwv", "-tbn", "verilator")
   "monitor" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
       c => new CoreTestNew(c, "test_asm/monitor/monitor.bin", 10000)
@@ -247,12 +259,12 @@ class MMUTester extends ChiselFlatSpec {
 }
 
 class RiscvTester extends ChiselFlatSpec {
-  val args = Array[String]("")
+  val args = Array[String]("-fiwv", "-tbn", "verilator")
   val names = new File("test_asm/riscv-test/obj").listFiles().map(f => f.getName)
   for(name <- names) {
     name should "pass test" in {
       iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 2000)
+        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 15000)
       } should be (true)
     }
   }
