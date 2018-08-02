@@ -243,7 +243,7 @@ class ID extends Module {
               is(SYS_INST_P2.xRET) {
                 val prv = inst(29,28)
                 io.ex.excep.valid := true.B
-                io.ex.excep.code := Mux(prv >= io.csr.prv, // prv ok ?
+                io.ex.excep.code := Mux(io.csr.prv >= prv,
                   Cause.xRet(prv),
                   Cause.IllegalInstruction)
               }
