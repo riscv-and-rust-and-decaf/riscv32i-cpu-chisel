@@ -252,7 +252,7 @@ class RiscvTester extends ChiselFlatSpec {
   for(name <- names) {
     name should "pass test" in {
       iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 1000)
+        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 2000)
       } should be (true)
     }
   }
