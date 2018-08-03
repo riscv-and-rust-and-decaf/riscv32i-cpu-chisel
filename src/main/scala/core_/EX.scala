@@ -15,10 +15,12 @@ class EX extends Module {
   //------------------- ALU ----------------------
 
   // Lock input
-  val a   = RegNext(io.id.aluOp.rd1, init=0.U(32.W))
-  val b   = RegNext(io.id.aluOp.rd2, init=0.U(32.W))
-  val opt = RegNext(io.id.aluOp.opt, init=OptCode.ADD)
+  val alu = RegNext(io.id.aluOp, init=0.U.asTypeOf(new ALUOp))
 
+  // Alias
+  val a   = alu.rd1
+  val b   = alu.rd2
+  val opt = alu.opt
   val shamt = b(4, 0)
 
   // NOTICE: SLL,SRL,SRA only use lower 5 bits of b
@@ -72,9 +74,18 @@ class EX extends Module {
   //----------------- status ---------------------
 
   val flush = io.flush
+  val stall = !io.mem.ready
 
   // EX stall => ID stall. So no need to keep registers.
-  io.id.ready := io.mem.ready
+  io.id.ready := !stall
+
+  when(stall) {
+    alu := alu
+    wregAddr := wregAddr
+    store_data := store_data
+    excep := excep
+    wrCSROp := wrCSROp
+  }
 
   when(flush) {
     opt := OptCode.ADD
