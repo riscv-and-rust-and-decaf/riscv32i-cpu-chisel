@@ -15,7 +15,7 @@ class MMU extends Module {
   })
 
   val ptw = Module(new PTW())
-  val tlb = Module(new TLB(4))
+  val tlb = Module(new TLB(6))
 
   // Whether all IO finished at the next rising edge.
   // Only when `ready = 1`, satp change or TLB invalidation can be accepted at next cycle.
@@ -25,6 +25,16 @@ class MMU extends Module {
   when(ready) {
     csr := io.csr
   }
+
+  // TLB can only be flushed when MMU ready.
+  // But flush request from CSR may comes at any time.
+  // So we need to log flush request when not ready.
+  val log_flush = RegInit(0.U.asTypeOf(new FlushOp))
+  when(io.csr.flush.valid) {
+    log_flush := io.csr.flush
+  }
+  // Final flush op on ready
+  val flush = Mux(io.csr.flush.valid, io.csr.flush, log_flush)
 
   // Enable MMU?
   val enable = csr.satp(31) && csr.priv =/= Priv.M
@@ -63,25 +73,17 @@ class MMU extends Module {
   // Handle page fault
   { // IF
     val rsp = tlb.io.query.rsp
-    io.iff.pageFault := rsp.valid && io.iff.mode =/= RAMMode.NOP && (
-      // Not (valid and executable)
-      !(rsp.bits.V && rsp.bits.X) ||
-      // User restriction
-      csr.priv === Priv.U && !rsp.bits.U
-    )
+    val e_exec = !(rsp.bits.V && rsp.bits.X)
+    val e_user = csr.priv === Priv.U && !rsp.bits.U
+    io.iff.pageFault := rsp.valid && io.iff.mode =/= RAMMode.NOP && (e_exec || e_user)
   }
   { // MEM
     val rsp = tlb.io.query2.rsp
-    io.mem.pageFault := rsp.valid && io.mem.mode =/= RAMMode.NOP && (
-      // Read
-      RAMMode.isRead(io.mem.mode) && !(rsp.bits.V && (rsp.bits.R || rsp.bits.X && csr.mxr)) ||
-      // Write
-      RAMMode.isWrite(io.mem.mode) && !(rsp.bits.V && rsp.bits.W) ||
-      // User restriction
-      csr.priv === Priv.U && !rsp.bits.U ||
-      // Access user in supervisor
-      csr.priv === Priv.S && !csr.sum && rsp.bits.U
-    )
+    val e_read  = RAMMode.isRead(io.mem.mode) && !(rsp.bits.V && (rsp.bits.R || rsp.bits.X && csr.mxr))
+    val e_write = RAMMode.isWrite(io.mem.mode) && !(rsp.bits.V && rsp.bits.W)
+    val e_user  = csr.priv === Priv.U && !rsp.bits.U
+    val e_sum   = csr.priv === Priv.S && !csr.sum && rsp.bits.U
+    io.mem.pageFault := rsp.valid && io.mem.mode =/= RAMMode.NOP && (e_read || e_write || e_user || e_sum)
   }
 
   // Detect TLB miss and refill
@@ -118,10 +120,22 @@ class MMU extends Module {
       }
       detect(tlb.io.query, io.dev.mem.ready)
       detect(tlb.io.query2, io.dev.if_.ready)
+
+      // Flush TLB
+      when(ready) {
+        when(flush.one) {
+          tlb.io.modify.mode := TLBOp.Remove
+          tlb.io.modify.vpn := PN.fromAddr(flush.addr)
+          printf("Flush: %x\n", flush.addr)
+        }.elsewhen(flush.all) {
+          tlb.io.modify.mode := TLBOp.Clear
+          printf("Flush All\n")
+        }
+        // Clear flush log
+        log_flush := 0.U.asTypeOf(new FlushOp)
+      }
     }
     is(sWalking) {
-      // io.dev.if_ <> ptw.io.mem
-
       // Insert Reg to avoid combinational loop
       // Better way to do this ?
       io.dev.if_.addr := RegNext(ptw.io.mem.addr)

@@ -61,9 +61,16 @@ class MMUOp extends RAMOp {
   val pageFault = Input(Bool())
 }
 
+class FlushOp extends Bundle {
+  val one  = Output(Bool())
+  val all  = Output(Bool())
+  val addr = Output(UInt(32.W))
+  def valid = one || all
+}
+
 class CSR_MMU extends Bundle {
   val satp  = Output(UInt(32.W))
-  val flush = Output(Valid(UInt(32.W)))
+  val flush = Output(new FlushOp)
   val priv  = Output(UInt(2.W)) // current privilege mode
   val mxr   = Output(Bool())    // Make eXecutable Readable
   val sum   = Output(Bool())    // Supervisor User Memory access

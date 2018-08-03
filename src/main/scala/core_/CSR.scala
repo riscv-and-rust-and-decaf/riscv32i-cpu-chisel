@@ -16,8 +16,8 @@ class CSR extends Module {
     val external_inter = Input(Valid(UInt(32.W)))
   })
 
-  val nextPrv = Wire(UInt(32.W))
-  val prv = RegNext(nextPrv, init=Priv.M)
+  val nextPrv = Wire(UInt(2.W))
+  val prv     = RegNext(nextPrv, init=Priv.M)
   nextPrv := prv
 
   object ADDR {
@@ -154,13 +154,8 @@ class CSR extends Module {
   val mideleg = csr(ADDR.mideleg)
   val sedeleg = csr(ADDR.sedeleg)
   val sideleg = csr(ADDR.sideleg)
-
   val mie   = csr(ADDR.mie)
-
-  val newMode = Wire(UInt(2.W))
-  newMode := Priv.M
-
-  val mtimecmp = Cat( csr(ADDR.mtimecmph), csr(ADDR.mtimecmp))
+  val mtimecmp = Cat(csr(ADDR.mtimecmph), csr(ADDR.mtimecmp))
 
   val ie = MuxLookup(prv, false.B, Seq(
     Priv.M  -> mstatus.MIE,
@@ -201,7 +196,6 @@ class CSR extends Module {
 
   // Handle exception from MEM at the same cycle
   when(have_excep) {
-    val cause = io.mem.excep.code
     // xRet
     when(Cause.isRet(cause)) {
       val x = Cause.retX(cause)
@@ -235,20 +229,19 @@ class CSR extends Module {
         Priv.S -> sepc,
         Priv.U -> uepc
       ))
-    }.elsewhen(cause.asUInt === Cause.SFence) {
+    }.elsewhen(cause.asUInt === Cause.SFenceOne || cause.asUInt === Cause.SFenceAll) {
       io.csrNewPc := io.mem.excep.pc + 4.U
-      //TODO: flush TLB
     }.otherwise { // Exception or Interrupt
       val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
       val tval = io.mem.excep.value
-      newMode := PriorityMux(Seq(
+      nextPrv := PriorityMux(Seq(
         (!cause(31) && !medeleg(cause(4,0)), Priv.M),
         ( cause(31) && !mideleg(cause(4,0)), Priv.M),
         (!cause(31) && !sedeleg(cause(4,0)), Priv.S),
         ( cause(31) && !sideleg(cause(4,0)), Priv.S),
-        (true.B,                                      Priv.U)
+        (true.B,                             Priv.U)
       ))
-      switch(newMode) {
+      switch(nextPrv) {
         is(Priv.M) {
           mstatus.MPIE := mstatus.MIE
           mstatus.MIE  := 0.U
@@ -273,13 +266,12 @@ class CSR extends Module {
           utval := tval
         }
       }
-      nextPrv := newMode
-      val xtvec = MuxLookup(newMode, 0.U, Seq(
+      val xtvec = MuxLookup(nextPrv, 0.U, Seq(
         Priv.M -> mtvec,
         Priv.S -> stvec,
         Priv.U -> utvec
         ))
-      val xcause = MuxLookup(newMode, 0.U, Seq(
+      val xcause = MuxLookup(nextPrv, 0.U, Seq(
         Priv.M -> mcause,
         Priv.S -> scause,
         Priv.U -> ucause
@@ -298,8 +290,9 @@ class CSR extends Module {
   io.mmu.satp := csr(ADDR.satp)
   io.mmu.sum := mstatus.SUM
   io.mmu.mxr := mstatus.MXR
-  io.mmu.flush.valid := false.B // TODO
-  io.mmu.flush.bits := 0.U
+  io.mmu.flush.one := io.mem.excep.valid && io.mem.excep.code === Cause.SFenceOne
+  io.mmu.flush.all := io.mem.excep.valid && io.mem.excep.code === Cause.SFenceAll
+  io.mmu.flush.addr := io.mem.excep.value
   io.mmu.priv := nextPrv
 }
 

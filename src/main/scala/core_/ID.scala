@@ -223,10 +223,9 @@ class ID extends Module {
             io.ex.excep.valid := true.B
             io.ex.excep.value := rs1Val
             io.ex.excep.code := Mux(io.csr.prv >= Priv.S,
-              Cause.SFence,
+              Mux(rs1Addr === 0.U, Cause.SFenceAll, Cause.SFenceOne),
               Cause.IllegalInstruction)
           }
-
         }
         .otherwise {
           val inst_p2 = inst(24,20)

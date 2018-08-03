@@ -112,10 +112,11 @@ object Cause {
   val StorePageFault         = 15.U
 
   // Internal use
-  val URet                   = 16.U
-  val SRet                   = 17.U
-  val MRet                   = 19.U
-  val SFence                 = 20.U
+  val URet      = 16.U
+  val SRet      = 17.U
+  val MRet      = 19.U
+  val SFenceOne = 20.U
+  val SFenceAll = 21.U
 
   // Helper
   def ecallX(prv: UInt) = 8.U | prv(1, 0)

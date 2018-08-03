@@ -48,6 +48,8 @@ class TLB(val SIZE_LOG2: Int) extends Module {
     }
   }
 
+  def toIndex(vpn: PN) = (vpn.p2 + vpn.p1)(SIZE_LOG2-1, 0)
+
   // Handle query
   def handleQuery(q: TLBQuery): Unit = {
     when(reset.toBool) {
@@ -60,7 +62,7 @@ class TLB(val SIZE_LOG2: Int) extends Module {
       q.rsp.bits.W := true.B
       q.rsp.bits.U := true.B
     }.otherwise {
-      val id = q.req.bits.asUInt()(SIZE_LOG2-1, 0)
+      val id = toIndex(q.req.bits)
       val entry = entries(id)
       q.rsp.valid := q.req.valid && entry.valid && entry.vpn.asUInt === q.req.bits.asUInt
       q.rsp.bits := entry.pte
@@ -72,7 +74,7 @@ class TLB(val SIZE_LOG2: Int) extends Module {
   // Handle modify, at rising edge
 
   // + insert
-  val id = io.modify.vpn.asUInt()(SIZE_LOG2-1, 0)
+  val id = toIndex(io.modify.vpn)
   when(io.modify.mode === TLBOp.Insert) {
     // WARNING: Don't define `entry = entries(id)`
     //          then use `entry` as a l-value.
