@@ -155,6 +155,7 @@ class CSR extends Module {
   val sedeleg = csr(ADDR.sedeleg)
   val sideleg = csr(ADDR.sideleg)
   val mie   = csr(ADDR.mie)
+  val mip   = csr(ADDR.mip)
   val mtimecmp = Cat(csr(ADDR.mtimecmph), csr(ADDR.mtimecmp))
 
   val ie = MuxLookup(prv, false.B, Seq(
@@ -167,7 +168,7 @@ class CSR extends Module {
   val inter_code = Wire(UInt(32.W))
   inter_code := io.external_inter.bits
 
-  //time_inter
+  //time_interi
   val mtime = RegInit(0.U(64.W))
   mtime := mtime + 1.U
 
@@ -175,10 +176,24 @@ class CSR extends Module {
   when(time_inter && !io.external_inter.valid) {
     inter_code := (Cause.Interrupt << 31) | Cause.UTI | prv
     }
+  val icl5 = inter_code(4,0)
+  val inter = (time_inter || io.external_inter.valid) && mie(icl5) // sie is a restricted views of mie
 
-  val inter = (time_inter || io.external_inter.valid) && mie(inter_code(4,0)) // sie is a restricted views of mie
 
-  val inter_new_mode = Mux( mideleg(inter_code(4,0)), Priv.S, Priv.M)
+  csr(ADDR.mip):= Cat(
+    0.U(20.W),
+    inter && (icl5 === 11.U),
+    0.U(1.W),
+    inter && (icl5 === 9.U),
+    inter && (icl5 === 8.U),
+    inter && (icl5 === 7.U),
+    0.U(1.W),
+    inter && (icl5 === 5.U),
+    inter && (icl5 === 4.U),
+    mip(3,0)
+  )
+
+  val inter_new_mode = Mux( mideleg(icl5), Priv.S, Priv.M)
   val inter_enable = ((inter_new_mode > prv) || ((inter_new_mode === prv) && ie))
 
 //  printf("mode: %d, prv: %d, ie: %d \n", inter_new_mode, prv, ie);
