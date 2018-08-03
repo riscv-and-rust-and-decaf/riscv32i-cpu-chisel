@@ -24,6 +24,7 @@ class EXTest(ex: EX) extends PeekPokeTester(ex) {
 
   poke(ex.io.id.excep.valid, false.B)
   poke(ex.io.flush, false.B)
+  poke(ex.io.mem.ready, true.B)
 
   for ((op, func) <- ops) {
     for (_ <- 0 until 10) {

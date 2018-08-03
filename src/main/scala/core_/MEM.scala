@@ -67,7 +67,7 @@ class MEM extends Module {
       io.csr.excep.code := Mux(RAMMode.isRead(ramOp.mode), Cause.LoadPageFault, Cause.StorePageFault)
     }
   }.otherwise {
-    printf("!exception! Pc:0x%x Code:0x%x\n",excep.pc, excep.code)
+//    printf("[MEM] Input exception! Pc:0x%x Code:0x%x\n",excep.pc, excep.code)
   }
 
   // Handle Exception

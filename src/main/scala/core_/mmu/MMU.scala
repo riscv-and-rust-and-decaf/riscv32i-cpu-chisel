@@ -126,10 +126,8 @@ class MMU extends Module {
         when(flush.one) {
           tlb.io.modify.mode := TLBOp.Remove
           tlb.io.modify.vpn := PN.fromAddr(flush.addr)
-          printf("Flush: %x\n", flush.addr)
         }.elsewhen(flush.all) {
           tlb.io.modify.mode := TLBOp.Clear
-          printf("Flush All\n")
         }
         // Clear flush log
         log_flush := 0.U.asTypeOf(new FlushOp)

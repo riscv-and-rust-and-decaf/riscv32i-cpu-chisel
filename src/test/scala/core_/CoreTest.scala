@@ -244,7 +244,7 @@ class MonitorTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   "monitor" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-      c => new CoreTestNew(c, "test_asm/monitor/monitor.bin", 10000)
+      c => new CoreTestNew(c, "test_asm/monitor/monitor.bin", 15000)
     } should be (true)
   }
 }
@@ -261,10 +261,11 @@ class MMUTester extends ChiselFlatSpec {
 class RiscvTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   val names = new File("test_asm/riscv-test/obj").listFiles().map(f => f.getName)
+//  Not passed: rv32mi-p-illegal, rv32si-p-dirty, ?
   for(name <- names) {
     name should "pass test" in {
       iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 50000)
+        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 30000)
       } should be (true)
     }
   }
