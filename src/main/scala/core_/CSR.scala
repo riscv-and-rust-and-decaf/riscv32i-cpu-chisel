@@ -164,43 +164,79 @@ class CSR extends Module {
     Priv.U  -> mstatus.UIE
   ))
 
-  //interrupt
-  val inter_code = Wire(UInt(32.W))
-  inter_code := io.external_inter.bits
+  // interrupt
+  // io.external_inter.bits is the detail of external interrupt
+  val ei = io.external_inter.valid
 
-  //time_interi
+  // time_inter
   val mtime = RegInit(0.U(64.W))
   mtime := mtime + 1.U
 
   val time_inter = (mtime >= mtimecmp)
+  /*
   when(time_inter && !io.external_inter.valid) {
     inter_code := (Cause.Interrupt << 31) | Cause.UTI | prv
     }
-  val icl5 = inter_code(4,0)
-  val inter = (time_inter || io.external_inter.valid) && mie(icl5) // sie is a restricted views of mie
+  */
+  //val icl5 = inter_code(4,0)
+  //val inter = (time_inter || io.external_inter.valid) && mie(icl5) // sie is a restricted views of mie
 
 
   csr(ADDR.mip):= Cat(
     0.U(20.W),
-    inter && (icl5 === 11.U),
+    (prv === Priv.M) && ei,
     0.U(1.W),
-    inter && (icl5 === 9.U),
-    inter && (icl5 === 8.U),
-    inter && (icl5 === 7.U),
+    (prv === Priv.S) && ei,
+    (prv === Priv.U) && ei,
+
+    (prv === Priv.M) && time_inter,
     0.U(1.W),
-    inter && (icl5 === 5.U),
-    inter && (icl5 === 4.U),
+    (prv === Priv.S) && time_inter,
+    (prv === Priv.U) && time_inter,
     mip(3,0)
   )
 
-  val inter_new_mode = Mux( mideleg(icl5), Priv.S, Priv.M)
+  val ipie = mip & mie
+  val ipie_m = ipie & ~mideleg
+  val ipie_s = ipie & mideleg
+  // interrupt code
+  val ic = PriorityMux(Seq(
+    (ipie_m(11), 11.U),
+    (ipie_m( 9),  9.U),
+    (ipie_m( 8),  8.U),
+
+    (ipie_m( 7),  7.U),
+    (ipie_m( 5),  5.U),
+    (ipie_m( 4),  4.U),
+
+    (ipie_m( 3),  3.U),
+    (ipie_m( 1),  1.U),
+    (ipie_m( 0),  0.U),
+    
+    (ipie_s(11), 11.U),
+    (ipie_s( 9),  9.U),
+    (ipie_s( 8),  8.U),
+
+    (ipie_s( 7),  7.U),
+    (ipie_s( 5),  5.U),
+    (ipie_s( 4),  4.U),
+
+    (ipie_s( 3),  3.U),
+    (ipie_s( 1),  1.U),
+    (ipie_s( 0),  0.U),
+
+    (true.B  ,  0.U)
+  ))
+
+  val inter_new_mode = Mux( mideleg(ic), Priv.S, Priv.M)
   val inter_enable = ((inter_new_mode > prv) || ((inter_new_mode === prv) && ie))
 
 //  printf("mode: %d, prv: %d, ie: %d \n", inter_new_mode, prv, ie);
-//  printf(" 0x%x >=  0x%x : %d\n, mtime, mtimecmp, time_inter)
-//  printf("inter: %d inter_enable:%d\n", inter, inter_enable);
-  io.mem.inter.valid := inter && inter_enable
-  io.mem.inter.bits  := inter_code
+  printf(" ~ 0x%x >=  0x%x : %d\n", mtime, mtimecmp, time_inter)
+  printf(" ~ mip : 0x%x \n", mip);
+  printf(" ~ inter:%d , code:%d\n", inter_enable, ic);
+  io.mem.inter.valid := inter_enable && ipie.orR
+  io.mem.inter.bits  := (Cause.Interrupt << 31)|  ic
 
   val epc = io.mem.excep.pc // NOTE: no +4, do by trap handler if necessary
   val have_excep = io.mem.excep.valid && io.mem.excep.valid_inst
