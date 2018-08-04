@@ -118,7 +118,9 @@ class CSR extends Module {
     ADDR.mhartid -> 0.U(32.W),
     ADDR.misa -> (1 << 30 | 1 << ('I' - 'A')).U(32.W),
     ADDR.mstatus -> mstatus.asUInt,
-    ADDR.sstatus -> mstatus.asUInt
+    ADDR.sstatus -> mstatus.asUInt,
+    ADDR.sie -> csr(ADDR.mie),
+    ADDR.sip -> csr(ADDR.mip)
   ))
   io.id.prv := prv
 
@@ -134,6 +136,12 @@ class CSR extends Module {
     }
     when(io.mem.wrCSROp.addr === ADDR.sstatus) {
       mstatus := io.mem.wrCSROp.data.asTypeOf(new MStatus)
+    }
+    when(io.mem.wrCSROp.addr === ADDR.sie) {
+      csr(ADDR.mie) := io.mem.wrCSROp.data
+    }
+    when(io.mem.wrCSROp.addr === ADDR.sip) {
+      csr(ADDR.mip) := io.mem.wrCSROp.data
     }
   }
 
