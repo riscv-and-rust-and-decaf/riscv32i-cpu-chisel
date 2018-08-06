@@ -1,5 +1,5 @@
 #!/bin/bash
-PREFIX="riscv32-unknown-elf-"
+PREFIX="riscv64-unknown-elf-"
 
 if type ${PREFIX}as > /dev/null 2>&1
 then

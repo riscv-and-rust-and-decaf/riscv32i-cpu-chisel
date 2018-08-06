@@ -1,4 +1,4 @@
-ARCH_PREF := riscv32-unknown-elf-
+ARCH_PREF := riscv64-unknown-elf-
 GCC := $(ARCH_PREF)gcc
 LD := $(ARCH_PREF)ld
 OBJDUMP := $(ARCH_PREF)objdump

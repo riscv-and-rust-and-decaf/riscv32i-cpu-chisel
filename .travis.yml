@@ -13,9 +13,10 @@ addons:
       - bison
 
 install:
-  - wget https://github.com/riscv-and-rust-and-decaf/riscv-prebuilt-toolchains/releases/download/2018-03-30/rv32-toolchains-prebuild.tar.bz2
-  - tar jxf rv32-toolchains-prebuild.tar.bz2
-  - export PATH=$PATH:$PWD/install-rv32/bin
+  - export FILE="riscv64-unknown-elf-gcc-2018.07.0-x86_64-linux-ubuntu14"
+  - wget https://static.dev.sifive.com/dev-tools/$FILE.tar.gz
+  - tar xf $FILE.tar.gz
+  - export PATH=$PATH:$PWD/$FILE/bin
 
 script:
   - tools/install-verilator.sh
