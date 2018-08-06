@@ -14,7 +14,7 @@ object DataHelper {
       return Seq(NOP, NOP)
     }
     Files.readAllBytes(Paths.get(fname))
-      .grouped(4).map(b => ByteBuffer.wrap(Array.fill(4)(0.toByte) ++ b.reverse).getLong)
+      .grouped(4).map(b => ByteBuffer.wrap(Array.fill(8-b.length)(0.toByte) ++ b.reverse).getLong)
       .toSeq
   }
 }

@@ -23,7 +23,7 @@ class MockSerial(printLog: Boolean = true) extends Module {
   val rdata = Wire(UInt(8.W))
   rdata := 0.U
   // test
-  when(mode === RAMMode.LBU && addr(2,0) === 5.U) {
+  when((mode === RAMMode.LB || mode === RAMMode.LBU) && addr(2,0) === 5.U) {
     rdata := status
   }
   // read
