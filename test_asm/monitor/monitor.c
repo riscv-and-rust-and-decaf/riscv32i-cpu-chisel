@@ -12,7 +12,21 @@
 #define GETBITS(src, ld, rd) (((src) >> (ld)) & ((1 << ((rd) - (ld) + 1)) - 1))
 #define SETBITS(dest, ld, rd, src) ((dest) | (GETBITS((src), 0, (rd) - (ld)) << (ld)))
 
+typedef unsigned u32;
+typedef unsigned long long u64;
 
+// timer precision: 10ms
+const u32 TIME_INTERVAL = 50000 * 10;
+
+static inline void set_mtimecmp(u64 x) {
+    asm volatile("csrw 0x321, %0; csrw 0x322, %1" :: "r"((u32)x), "r"((u32)(x >> 32)));
+}
+
+static inline u64 get_time() {
+    u32 lo, hi;
+    asm volatile("csrr %0, 0xC01; csrr %1, 0xC81" : "=r"(lo), "=r"(hi));
+    return ((u64)hi << 32) | lo;
+}
 
 #define GETCHAR_BLK(c) {while(!((*((volatile char*)ADR_SERIAL_BUF)) & 0x1)); \
     (c) = *((volatile char*)ADR_SERIAL_DAT); }
@@ -125,8 +139,7 @@ void trap(){
         // asynchronous interrupt
         switch((cause << 1) >> 1){
             case INT_MTIMER:
-                *((unsigned*)ADR_TMEH) = 0;
-                *((unsigned*)ADR_TMEL) = 0;
+                set_mtimecmp(get_time() + TIME_INTERVAL);
                 if(in_user){
                     ++ time_count;
                     // time is up
@@ -165,7 +178,7 @@ void trap(){
         switch(cause){
             case EXC_INST_MISALIGN:
                 print("Exception: instruction misaligned @ ");
-//                print_hex(read_csr(mtval));
+                print_hex(read_csr(mtval));
                 print("\n");
                 ret = true;
                 break;
@@ -175,12 +188,12 @@ void trap(){
                 break;
             case EXC_LOAD_MISALIGN:
                 print("Exception: load misaligned @ ");
-//                print_hex(read_csr(mtval));
+                print_hex(read_csr(mtval));
                 print("\n");
                 break;
             case EXC_STORE_MISALIGN:
                 print("Exception: store misaligned @ ");
-//                print_hex(read_csr(mtval));
+                print_hex(read_csr(mtval));
                 print("\n");
                 ret = true;
                 break;
@@ -239,13 +252,8 @@ void init(){
     // set up trap vector
     write_csr(mtvec, _trap_entry);
     set_csr(mstatus, 8);
-    // timecmp = 125000 = clockfreq / 100
-    // timer precision: 10ms
-    *((unsigned*)ADR_CMPH) = 0;
-    *((unsigned*)ADR_CMPL) = 125000;
-    *((unsigned*)ADR_TMEH) = 0;
-    *((unsigned*)ADR_TMEL) = 0;
-#ifdef WITH_IRQ 
+    set_mtimecmp(TIME_INTERVAL);
+#ifdef WITH_IRQ
     set_csr(mie, (1 << INT_MTIMER) | (1 << INT_MIRQ));
 #else
     set_csr(mie, (1 << INT_MTIMER));
@@ -545,32 +553,32 @@ void disas_exe(){
 
 void start(){
     print("Welcome to System on Cat!\n");
-//    print("Monitor v0.1\n");
-//    print("Build specs:\n");
-//    print("  WITH_CSR = ");
-//#ifdef WITH_CSR
-//    print("on\n");
-//#else
-//    print("off\n");
-//#endif
-//    print("  WITH_INTERRUPT = ");
-//#ifdef WITH_INTERRUPT
-//    print("on\n");
-//#else
-//    print("off\n");
-//#endif
-//    print("  WITH_IRQ = ");
-//#ifdef WITH_IRQ
-//    print("on\n");
-//#else
-//    print("off\n");
-//#endif
-//    print("  WITH_ECALL = ");
-//#ifdef WITH_ECALL
-//    print("on\n");
-//#else
-//    print("off\n");
-//#endif
+    print("Monitor v0.1\n");
+    print("Build specs:\n");
+    print("  WITH_CSR = ");
+#ifdef WITH_CSR
+    print("on\n");
+#else
+    print("off\n");
+#endif
+    print("  WITH_INTERRUPT = ");
+#ifdef WITH_INTERRUPT
+    print("on\n");
+#else
+    print("off\n");
+#endif
+    print("  WITH_IRQ = ");
+#ifdef WITH_IRQ
+    print("on\n");
+#else
+    print("off\n");
+#endif
+    print("  WITH_ECALL = ");
+#ifdef WITH_ECALL
+    print("on\n");
+#else
+    print("off\n");
+#endif
 
     init();
     
