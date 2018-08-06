@@ -19,6 +19,19 @@ volatile pte_t* const page_root = (pte_t*)0x80001000;
 volatile pte_t* const page1     = (pte_t*)0x80002000;
 volatile pte_t* const virt_root = (pte_t*)0xffffe000;
 
+__attribute__((noinline))
+void enter_S_mode() {
+    u32 mstatus;
+    asm volatile ("csrr %0, mstatus" : "=r"(mstatus));
+    if(mstatus) {
+        puts("Now in S mode.\n");
+        return;
+    }
+    asm volatile ("csrw mstatus, %0" :: "r"(1 << 11));    // MPP = S
+    asm volatile ("csrw mepc, %0" :: "r"(enter_S_mode));
+    asm volatile ("mret");
+}
+
 void enable_page_table() {
 //    for(int i=0; i<0x1000; ++i)
 //        page_root[i] = page1[i] = 0;
@@ -34,7 +47,7 @@ void enable_page_table() {
     puts("Enable paging\n");
     u32 satp = (1 << 31) | ((u32)page_root >> 12);
     asm volatile ("csrw satp, %0" : : "r"(satp) : "memory");
-    asm volatile ("nop\nnop\nnop\nnop\n");
+    asm volatile ("sfence.vma");
 }
 
 void check_paging() {
@@ -50,6 +63,7 @@ void check_paging() {
 }
 
 int main() {
+    enter_S_mode();
     enable_page_table();
     puts("Hello page table!\n");
     check_paging();
