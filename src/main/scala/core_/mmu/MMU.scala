@@ -75,7 +75,7 @@ class MMU extends Module {
     val rsp = tlb.io.query.rsp
     val e_exec = !(rsp.bits.V && rsp.bits.X)
     val e_user = csr.priv === Priv.U && !rsp.bits.U
-    io.iff.pageFault := rsp.valid && io.iff.mode =/= RAMMode.NOP && (e_exec || e_user)
+    io.iff.pageFault := enable && rsp.valid && io.iff.mode =/= RAMMode.NOP && (e_exec || e_user)
   }
   { // MEM
     val rsp = tlb.io.query2.rsp
@@ -83,7 +83,7 @@ class MMU extends Module {
     val e_write = RAMMode.isWrite(io.mem.mode) && !(rsp.bits.V && rsp.bits.W)
     val e_user  = csr.priv === Priv.U && !rsp.bits.U
     val e_sum   = csr.priv === Priv.S && !csr.sum && rsp.bits.U
-    io.mem.pageFault := rsp.valid && io.mem.mode =/= RAMMode.NOP && (e_read || e_write || e_user || e_sum)
+    io.mem.pageFault := enable && rsp.valid && io.mem.mode =/= RAMMode.NOP && (e_read || e_write || e_user || e_sum)
   }
 
   // Detect TLB miss and refill
@@ -104,9 +104,7 @@ class MMU extends Module {
   ptw.io.req.valid := false.B
   ptw.io.req.bits := 0.U.asTypeOf(new PN)
   ptw.io.rsp.ready := false.B
-  tlb.io.modify.mode := TLBOp.None
-  tlb.io.modify.vpn := 0.U.asTypeOf(new PN)
-  tlb.io.modify.pte := 0.U.asTypeOf(new PTE)
+  tlb.io.modify := 0.U.asTypeOf(new TLBModify)
 
   switch(status) {
     is(sReady) {
@@ -143,6 +141,7 @@ class MMU extends Module {
       ptw.io.mem.ok := io.dev.if_.ok
 
       io.iff.ok := false.B
+      io.dev.mem.mode := 0.U
       io.mem.ok := false.B
       ptw.io.rsp.ready := true.B
       when(ptw.io.rsp.valid) {
