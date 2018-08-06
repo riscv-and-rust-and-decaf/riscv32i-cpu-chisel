@@ -1,7 +1,13 @@
 import sys
 import subprocess
-import time
 import io
+import signal
+
+class TimeoutError(Exception):
+	pass
+
+def handler(signum, frame):
+	raise TimeoutError()
 
 USAGE = 'Usage: qemu_trace.py <kernel_obj>'
 
@@ -18,12 +24,14 @@ p = subprocess.Popen([
 	'-d', 'in_asm'], 
 	stderr=subprocess.PIPE)
 
-time.sleep(2)
-p.kill()
+# set the timeout handler
+signal.signal(signal.SIGALRM, handler)
+signal.alarm(2)
 
-trace_file = open(kernel + '.std.run', 'w')
-for line in io.TextIOWrapper(p.stderr, encoding="utf-8"): 
-	if line[0:2] == '0x':
-		trace_file.write(line[2:10] + '\n')
-trace_file.close()
-
+try:
+	with open(kernel + '.std.run', 'w') as trace_file:
+		for line in io.TextIOWrapper(p.stderr, encoding="utf-8"):
+			if line[0:2] == '0x':
+				trace_file.write(line[2:10] + '\n')
+except TimeoutError:
+	p.kill()
