@@ -48,6 +48,9 @@ object OptCode {
 
   val JALR = 10.U(5.W)
 
+  val MUL = 11.U(5.W)
+  val DIV = 15.U(5.W)
+
   val LW  = 24.U(5.W) // 11000
   val LH  = 26.U(5.W) // 11010
   val LHU = 27.U(5.W) // 11011
@@ -199,7 +202,10 @@ object DecTable {
     Insts.SYS   -> List(InstType.SYS, OptCode.ADD), //Maybe ecall maybe csr
     
     Insts.FENCE -> List(InstType.FENCE, OptCode.ADD),
-    Insts.FENCE_I -> List(InstType.FENCE, OptCode.ADD)
+    Insts.FENCE_I -> List(InstType.FENCE, OptCode.ADD),
+
+    Insts.MUL  -> List(InstType.R, OptCode.MUL),
+    Insts.DIV  -> List(InstType.R, OptCode.DIV)
   )
 
   // fields
@@ -259,6 +265,17 @@ object Insts { // idea from mini riscv
 // FENCE
   def FENCE  = BitPat("b0000????????00000000000000001111")
   def FENCE_I= BitPat("b00000000000000000001000000001111")
+
+// M-extension
+  def MUL    = BitPat("b0000001??????????000?????0110011")
+  def MULH   = BitPat("b0000001??????????001?????0110011")
+  def MULHSU = BitPat("b0000001??????????010?????0110011")
+  def MULHU  = BitPat("b0000001??????????011?????0110011")
+  def DIV    = BitPat("b0000001??????????000?????0110011")
+  def DIVU   = BitPat("b0000001??????????000?????0110011")
+  def REM    = BitPat("b0000001??????????000?????0110011")
+  def REMU   = BitPat("b0000001??????????000?????0110011")
+
 }
 
 object SYS_INST_P2 { // bits(24:20)

@@ -36,7 +36,10 @@ class EX extends Module {
       AND -> (a & b),
       SLL -> (a << shamt),
       SRL -> (a >> shamt),
-      SRA -> (a.asSInt >> shamt).asUInt
+      SRA -> (a.asSInt >> shamt).asUInt,
+
+      MUL -> (a * b)(31,0),
+      DIV -> (a / b)
       // not necessary, all rest (a+b)
     )
   )
