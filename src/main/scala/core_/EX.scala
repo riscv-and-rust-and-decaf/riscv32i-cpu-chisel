@@ -82,11 +82,20 @@ class EX extends Module {
 
   //----------------- status ---------------------
 
+  val countdown = RegInit(0.U(3.W))
   val flush = io.flush
-  val stall = !io.mem.ready
+  val stall = !io.mem.ready || countdown =/= 0.U
 
-  // EX stall => ID stall. So no need to keep registers.
   io.id.ready := !stall
+
+  // Wait 7 cycles for mul/div
+  when(!stall && io.id.aluOp.opt >= 11.U && io.id.aluOp.opt <= 18.U) {
+    countdown := 7.U
+  }.elsewhen(countdown =/= 0.U) {
+    countdown := countdown - 1.U
+  }.otherwise {
+    countdown := 0.U
+  }
 
   when(stall) {
     alu := alu
