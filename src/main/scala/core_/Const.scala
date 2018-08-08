@@ -49,7 +49,13 @@ object OptCode {
   val JALR = 10.U(5.W)
 
   val MUL = 11.U(5.W)
+  val MULH = 12.U(5.W)
+  val MULHSU = 13.U(5.W)
+  val MULHU = 14.U(5.W)
   val DIV = 15.U(5.W)
+  val DIVU = 16.U(5.W)
+  val REM = 17.U(5.W)
+  val REMU = 18.U(5.W)
 
   val LW  = 24.U(5.W) // 11000
   val LH  = 26.U(5.W) // 11010
@@ -205,7 +211,12 @@ object DecTable {
     Insts.FENCE_I -> List(InstType.FENCE, OptCode.ADD),
 
     Insts.MUL  -> List(InstType.R, OptCode.MUL),
-    Insts.DIV  -> List(InstType.R, OptCode.DIV)
+    Insts.MULH -> List(InstType.R, OptCode.MULH),
+    Insts.MULHSU -> List(InstType.R, OptCode.MULHSU),
+    Insts.DIV  -> List(InstType.R, OptCode.DIV),
+    Insts.DIVU  -> List(InstType.R, OptCode.DIVU),
+    Insts.REM   -> List(InstType.R, OptCode.REM),
+    Insts.REMU  -> List(InstType.R, OptCode.REMU)
   )
 
   // fields

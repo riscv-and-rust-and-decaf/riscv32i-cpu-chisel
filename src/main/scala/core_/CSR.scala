@@ -123,7 +123,7 @@ class CSR extends Module {
     ADDR.marchid -> "h8fffffff".U(32.W),
     ADDR.mimpid -> 2333.U(32.W),
     ADDR.mhartid -> 0.U(32.W),
-    ADDR.misa -> (1 << 30 | 1 << ('I' - 'A')).U(32.W),
+    ADDR.misa -> (1 << 30 | 1 << ('I' - 'A') | 1 << ('M' - 'A')).U(32.W),
     ADDR.mstatus -> mstatus.asUInt,
     ADDR.sstatus -> mstatus.asUInt,
     ADDR.sie -> csr(ADDR.mie),

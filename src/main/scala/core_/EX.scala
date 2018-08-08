@@ -39,7 +39,13 @@ class EX extends Module {
       SRA -> (a.asSInt >> shamt).asUInt,
 
       MUL -> (a * b)(31,0),
-      DIV -> (a / b)
+      MULH ->( a.asSInt * b.asSInt)(63,32).asUInt,
+      MULHU -> (a * b)(63,32),
+      MULHSU -> (a.asSInt * b)(63,32).asUInt,
+      DIV -> (a.asSInt / b.asSInt).asUInt,
+      DIVU -> a / b,
+      REM  -> (a.asSInt % b.asSInt).asUInt,
+      REMU -> a % b
       // not necessary, all rest (a+b)
     )
   )
