@@ -1,22 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.89 (w)1999-2018 BSI
-[*] Sun Jul 29 04:40:20 2018
+[*] Thu Aug  2 08:25:15 2018
 [*]
-[dumpfile] "/Users/wangrunji/Documents/Codes/Tsinghua/Grade3-3/riscv32i-cpu-chisel/test_run_dir/core_.CoreAsmTester1501245509/CoreTestModule.vcd"
-[dumpfile_mtime] "Sat Jul 28 15:15:29 2018"
-[dumpfile_size] 2925642
-[savefile] "/Users/wangrunji/Documents/Codes/Tsinghua/Grade3-3/riscv32i-cpu-chisel/Untitled.gtkw"
-[timestart] 789
-[size] 1280 800
+[dumpfile] "/Users/wangrunji/Documents/Codes/Tsinghua/Grade3-3/riscv32i-cpu-chisel/test_run_dir/core_.RiscvTester2116357217/CoreTestModule.vcd"
+[dumpfile_mtime] "Thu Aug  2 08:07:42 2018"
+[dumpfile_size] 37261922
+[savefile] "/Users/wangrunji/Documents/Codes/Tsinghua/Grade3-3/riscv32i-cpu-chisel/config.gtkw"
+[timestart] 7913
+[size] 1280 755
 [pos] -1 -1
-*-2.531963 494 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-2.818273 7926 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] CoreTestModule.
 [treeopen] CoreTestModule.core.
-[treeopen] CoreTestModule.core.mmu.
 [sst_width] 193
 [signals_width] 288
 [sst_expanded] 1
-[sst_vpaned_height] 363
+[sst_vpaned_height] 339
 @22
 CoreTestModule.cycle[31:0]
 @28
@@ -34,11 +33,11 @@ CoreTestModule.ram.io_ok
 CoreTestModule.ram.io_rdata[31:0]
 @1000200
 -RAM
-@800200
+@c00200
 -MMU
-@22
-CoreTestModule.core.mmu.satp[31:0]
 @28
+CoreTestModule.core.mmu.ready
+CoreTestModule.core.mmu.enable
 CoreTestModule.core.mmu.status
 @c00200
 -IF
@@ -47,6 +46,7 @@ CoreTestModule.core.mmu.io_iff_addr[31:0]
 CoreTestModule.core.mmu.io_iff_mode[3:0]
 @28
 CoreTestModule.core.mmu.io_iff_ok
+CoreTestModule.core.mmu.io_iff_pageFault
 @22
 CoreTestModule.core.mmu.io_iff_rdata[31:0]
 CoreTestModule.core.mmu.io_iff_wdata[31:0]
@@ -54,7 +54,10 @@ CoreTestModule.core.mmu.io_iff_wdata[31:0]
 -IF
 @c00200
 -MEM
+@28
+CoreTestModule.core.mem.io_csr_excep_valid_inst
 @22
+CoreTestModule.core.mem.io_csr_excep_pc[31:0]
 CoreTestModule.core.mmu.io_mem_addr[31:0]
 CoreTestModule.core.mmu.io_mem_mode[3:0]
 @28
@@ -120,8 +123,9 @@ CoreTestModule.core.mmu.tlb.io_modify_vpn_p1[9:0]
 -modify
 @1000200
 -TLB
+@1401200
 -MMU
-@c00200
+@c00201
 -IF
 @22
 CoreTestModule.core.iff.pc[31:0]
@@ -135,48 +139,15 @@ CoreTestModule.core.iff.branch_valid
 @22
 CoreTestModule.core.iff.branch_bits[31:0]
 @28
+CoreTestModule.core.iff.io_id_branch_valid
+@22
+CoreTestModule.core.iff.io_id_branch_bits[31:0]
+@28
 CoreTestModule.core.iff.stall
-@1401200
+@1401201
 -IF
 @c00200
 -ID
-@c00022
-CoreTestModule.core.id.pc[31:0]
-@28
-(0)CoreTestModule.core.id.pc[31:0]
-(1)CoreTestModule.core.id.pc[31:0]
-(2)CoreTestModule.core.id.pc[31:0]
-(3)CoreTestModule.core.id.pc[31:0]
-(4)CoreTestModule.core.id.pc[31:0]
-(5)CoreTestModule.core.id.pc[31:0]
-(6)CoreTestModule.core.id.pc[31:0]
-(7)CoreTestModule.core.id.pc[31:0]
-(8)CoreTestModule.core.id.pc[31:0]
-(9)CoreTestModule.core.id.pc[31:0]
-(10)CoreTestModule.core.id.pc[31:0]
-(11)CoreTestModule.core.id.pc[31:0]
-(12)CoreTestModule.core.id.pc[31:0]
-(13)CoreTestModule.core.id.pc[31:0]
-(14)CoreTestModule.core.id.pc[31:0]
-(15)CoreTestModule.core.id.pc[31:0]
-(16)CoreTestModule.core.id.pc[31:0]
-(17)CoreTestModule.core.id.pc[31:0]
-(18)CoreTestModule.core.id.pc[31:0]
-(19)CoreTestModule.core.id.pc[31:0]
-(20)CoreTestModule.core.id.pc[31:0]
-(21)CoreTestModule.core.id.pc[31:0]
-(22)CoreTestModule.core.id.pc[31:0]
-(23)CoreTestModule.core.id.pc[31:0]
-(24)CoreTestModule.core.id.pc[31:0]
-(25)CoreTestModule.core.id.pc[31:0]
-(26)CoreTestModule.core.id.pc[31:0]
-(27)CoreTestModule.core.id.pc[31:0]
-(28)CoreTestModule.core.id.pc[31:0]
-(29)CoreTestModule.core.id.pc[31:0]
-(30)CoreTestModule.core.id.pc[31:0]
-(31)CoreTestModule.core.id.pc[31:0]
-@1401200
--group_end
 @22
 CoreTestModule.core.id.io_iff_inst[31:0]
 @28
@@ -195,8 +166,6 @@ CoreTestModule.core.ex.b[31:0]
 @c00200
 -MEM
 @22
-CoreTestModule.core.mem.wregAddr[31:0]
-CoreTestModule.core.mem.exWrRegData[31:0]
 CoreTestModule.core.mem.ramOp_addr[31:0]
 CoreTestModule.core.mem.ramOp_mode[3:0]
 CoreTestModule.core.mem.ramOp_wdata[31:0]
@@ -210,6 +179,10 @@ CoreTestModule.core.mem.io_mmu_ok
 @22
 CoreTestModule.core.mem.io_mmu_rdata[31:0]
 CoreTestModule.core.mem.io_mmu_wdata[31:0]
+@28
+CoreTestModule.core.mem.excep_valid
+@22
+CoreTestModule.core.mem.excep_code[31:0]
 @28
 CoreTestModule.core.mem.stall
 @1401200
@@ -249,11 +222,11 @@ CoreTestModule.ioCtrl.io_core_mem_rdata[31:0]
 CoreTestModule.ioCtrl.io_core_mem_wdata[31:0]
 @1401200
 -IO
-@800200
+@c00200
 -CSR
 @28
-CoreTestModule.core.csr.priv[1:0]
-@1000200
+CoreTestModule.core.csr.io_flush
+@1401200
 -CSR
 [pattern_trace] 1
 [pattern_trace] 0

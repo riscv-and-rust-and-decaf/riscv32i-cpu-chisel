@@ -48,7 +48,7 @@ class TLB(val SIZE_LOG2: Int) extends Module {
     }
   }
 
-  def toIndex(vpn: PN) = (vpn.p2 + vpn.p1)(SIZE_LOG2-1, 0)
+  def toIndex(vpn: PN) = (vpn.p2 ^ vpn.p1)(SIZE_LOG2-1, 0)
 
   // Handle query
   def handleQuery(q: TLBQuery): Unit = {

@@ -15,7 +15,7 @@ class MMU extends Module {
   })
 
   val ptw = Module(new PTW())
-  val tlb = Module(new TLB(6))
+  val tlb = Module(new TLB(5))
 
   // Whether all IO finished at the next rising edge.
   // Only when `ready = 1`, satp change or TLB invalidation can be accepted at next cycle.

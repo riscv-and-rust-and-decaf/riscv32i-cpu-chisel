@@ -250,7 +250,7 @@ class MonitorTester extends ChiselFlatSpec {
 }
 
 class MMUTester extends ChiselFlatSpec {
-  val args = Array[String]("-fiwv")
+  val args = Array[String]("-fiwv", "-tbn", "verilator")
   "page table" should "pass test" in {
     iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
       c => new CoreTestNew(c, "test_asm/pagetable.bin", 1500)
