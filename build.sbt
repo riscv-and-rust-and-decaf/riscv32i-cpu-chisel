@@ -24,31 +24,30 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-name := "chisel-p1"
+name := "riscv32i-cpu"
 
 version := "3.1.0"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.10"
 
-crossScalaVersions := Seq("2.11.12", "2.12.4")
+crossScalaVersions := Seq("2.12.10", "2.11.12")
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots"),
   Resolver.sonatypeRepo("releases")
 )
 
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map(
-  "chisel3" -> "3.1.+",
-  "chisel-iotesters" -> "1.2.+"
+val defaultVersions = Seq(
+  "chisel-iotesters" -> "1.4.1+",
+  "chiseltest"  -> "0.2.1+"
   )
 
-libraryDependencies ++= (Seq("chisel3","chisel-iotesters").map {
-  dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })
+libraryDependencies ++= defaultVersions.map { case (dep, ver) =>
+  "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", ver) }
 
 scalacOptions ++= scalacOptionsVersion(scalaVersion.value)
 
 javacOptions ++= javacOptionsVersion(scalaVersion.value)
-
-// don't know why but works
-Test / fork := true

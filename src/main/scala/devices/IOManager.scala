@@ -2,7 +2,6 @@ package devices
 
 import core_._
 import chisel3._
-import chisel3.core.stop
 import chisel3.util._
 
 object MemoryRegionExt {
