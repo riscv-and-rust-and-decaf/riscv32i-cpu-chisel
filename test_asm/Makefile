@@ -1,23 +1,28 @@
 insts := $(patsubst %.s,%.bin,$(wildcard *.s)) \
-         $(patsubst %.c,%.c.bin,$(wildcard *.c))
+         $(patsubst %.c,%.bin,$(wildcard *.c))
 
-all: ${insts} monitor riscv-test
+PREFIX := riscv64-unknown-elf-
+OBJCOPY := ${PREFIX}objcopy
+CC := ${PREFIX}gcc
 
-monitor:
-	make -C monitor
+CFLAGS := -mabi=ilp32 -march=rv32im -O2 -std=gnu99 -Wno-unused -fno-builtin -Wall -nostdinc -fno-stack-protector -ffunction-sections -fdata-sections -nostartfiles
+
+all: ${insts} riscv-test
 
 riscv-test:
 	make -C riscv-test
 
-%.c.bin: %.c
-	../tools/assembler $^
+%.bin: %.o
+	${OBJCOPY} -O binary $^ $@
 
-%.bin: %.s
-	../tools/assembler $^
+%.o: %.c
+	${CC} ${CFLAGS} $^ -o $@ -Tlinker.ld
+
+%.o: %.s
+	${CC} ${CFLAGS} $^ -o $@ -Tlinker.ld
 
 clean:
-	make -C monitor clean
 	make -C riscv-test clean
 	rm -f *.bin *.o *.run
 
-.PHONY: all clean monitor riscv-test
+.PHONY: all clean riscv-test

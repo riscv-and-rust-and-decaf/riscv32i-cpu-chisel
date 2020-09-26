@@ -1,3 +1,0 @@
-This is bbl's dummy_payload.  To boot a real kernel, reconfigure
-bbl with the flag --with-payload=PATH, then rebuild bbl.
-Power off
