@@ -1,0 +1,27 @@
+name: main
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup scala
+        uses: olafurpg/setup-scala@v5
+      - name: Setup verilator
+        run: |
+          wget https://github.com/sifive/verilator/releases/download/4.016-0sifive1/verilator_4.016-0sifive1_amd64.deb
+          sudo dpkg -i verilator_4.016-0sifive1_amd64.deb
+      - name: Setup RISCV toolchain
+        run: |
+          export FILE="riscv64-unknown-elf-gcc-8.3.0-2020.04.0-x86_64-linux-ubuntu14"
+          wget https://static.dev.sifive.com/dev-tools/$FILE.tar.gz
+          tar xf $FILE.tar.gz
+          echo "::add-path::$PWD/$FILE/bin"
+      - name: Build binaries
+        run: make -C test_asm
+      - name: Test
+        run: sbt test
