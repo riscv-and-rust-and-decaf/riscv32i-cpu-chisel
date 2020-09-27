@@ -1,6 +1,6 @@
 Tsinghua University Computer Systems Organization
 =================================================
-[![Build Status](https://travis-ci.org/riscv-and-rust-and-decaf/riscv32i-cpu-chisel.svg?branch=master)](https://travis-ci.org/riscv-and-rust-and-decaf/riscv32i-cpu-chisel)
+[![Build Status](https://github.com/riscv-and-rust-and-decaf/riscv32i-cpu-chisel/workflows/main/badge.svg?branch=master)](https://github.com/riscv-and-rust-and-decaf/riscv32i-cpu-chisel/actions)
 
 This is the CPU part of the course project for the CSO course in Tsinghua University.
 
