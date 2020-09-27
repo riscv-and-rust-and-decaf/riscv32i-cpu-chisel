@@ -9,7 +9,9 @@ class TimeoutError(Exception):
 def handler(signum, frame):
 	raise TimeoutError()
 
-USAGE = 'Usage: qemu_trace.py <kernel_obj>'
+USAGE = """Usage: qemu_trace.py <kernel_obj>
+
+Run a program in QEMU and dump its PCs."""
 
 if len(sys.argv) <= 1:
 	print(USAGE)
@@ -20,6 +22,7 @@ kernel = sys.argv[1]
 p = subprocess.Popen([
 	'qemu-system-riscv32',
 	'-machine', 'virt',
+	'-bios', 'none',
 	'-kernel', kernel, '-nographic',
 	'-d', 'in_asm'], 
 	stderr=subprocess.PIPE)
