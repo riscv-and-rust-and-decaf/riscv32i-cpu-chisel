@@ -4,10 +4,8 @@ import chisel3._
 import core_._
 
 
-class MockSerial(printLog: Boolean = true) extends Module {
+class MockSerial(inputs_raw: String, printLog: Boolean = false) extends Module {
   val io = IO(Flipped(new RAMOp))
-
-  val inputs_raw = "E 0x80010000\n0x0cafefb7\n\nJ 0x80010000\n"  // test pass
 
   val inputs = VecInit(inputs_raw.map(x => x.U(8.W)))
   val next_input_num = RegInit(0.U(32.W))

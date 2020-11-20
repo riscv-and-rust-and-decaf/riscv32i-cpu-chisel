@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.iotesters._
 import devices._
 
-class CoreTestModule(ramDataFile: String, trace: Boolean = true) extends Module {
+class CoreTestModule(ramDataFile: String, trace: Boolean = false, serialInputs: String = "\0") extends Module {
   val io = IO(new Bundle {
     val debug    = new CoreState()
     val d_ram    = new RAMOp_Output()
@@ -17,7 +17,7 @@ class CoreTestModule(ramDataFile: String, trace: Boolean = true) extends Module 
   val ioCtrl = Module(new IOManager())
   val ram    = Module(new MockRam(ramDataFile, trace))
   val flash  = Module(new NullDev())
-  val serial = Module(new MockSerial(trace))
+  val serial = Module(new MockSerial(serialInputs, trace))
 
   val cycle = RegInit(0.U(32.W))
   if (trace) printf(p"Cycle $cycle\n")
@@ -212,13 +212,13 @@ class CoreTester extends ChiselFlatSpec {
       c => new CoreTestWithFw(c)
     } should be(true)
   }
-  for((name, timeout, trace) <- Seq(
-    ("test5", 50, true),
-    ("test4", 250, true),
-    ("hello", 500, false)
+  for((name, timeout) <- Seq(
+    ("test5", 50),
+    ("test4", 250),
+    ("hello", 500)
   )) {
     name should "pass test" in {
-      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/$name.hex", trace)) {
+      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/$name.hex")) {
         c => new CoreTestNew(c, timeout)
       } should be (true)
     }
@@ -228,7 +228,8 @@ class CoreTester extends ChiselFlatSpec {
 class MonitorTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   "monitor" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/monitor/monitor.hex", false)) {
+    val serialInputs = "G%c%c%c%cR".format(0x00, 0x10, 0x00, 0x80)
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/kernel.hex", false, serialInputs)) {
       c => new CoreTestNew(c, 15000)
     } should be (true)
   }
@@ -237,7 +238,7 @@ class MonitorTester extends ChiselFlatSpec {
 class MMUTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   "page table" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/pagetable.hex", false)) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/pagetable.hex")) {
       c => new CoreTestNew(c, 1500)
     } should be (true)
   }
@@ -249,7 +250,7 @@ class RiscvTester extends ChiselFlatSpec {
 //  Not passed: rv32mi-p-illegal, rv32si-p-dirty, ?
   for(name <- names) {
     name should "pass test" in {
-      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/riscv-test/$name.hex", false)) {
+      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/riscv-test/$name.hex")) {
         c => new RiscvTest(c, 30000)
       } should be (true)
     }

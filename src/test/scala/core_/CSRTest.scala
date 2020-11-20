@@ -29,7 +29,7 @@ class CoreCSRTester extends ChiselFlatSpec {
     } should be (true)
   }
   "eret" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test_ret.hex", false)) {
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test_ret.hex")) {
       c => new CoreTestNew(c, 100)
     } should be (true)
   }
