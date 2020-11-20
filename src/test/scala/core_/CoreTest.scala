@@ -6,14 +6,8 @@ import chisel3._
 import chisel3.iotesters._
 import devices._
 
-/*
-  After reset, tester should first set `ready` to false,
-  and load init data to RAM through `ram_init`.
- */
-class CoreTestModule(trace: Boolean = true) extends Module {
+class CoreTestModule(ramDataFile: String, trace: Boolean = true) extends Module {
   val io = IO(new Bundle {
-    val ready    = Input(Bool())
-    val ram_init = Flipped(new RAMOp())
     val debug    = new CoreState()
     val d_ram    = new RAMOp_Output()
   })
@@ -21,15 +15,13 @@ class CoreTestModule(trace: Boolean = true) extends Module {
 
   val core   = Module(new Core())
   val ioCtrl = Module(new IOManager())
-  val ram    = Module(new MockRam(trace))
+  val ram    = Module(new MockRam(ramDataFile, trace))
   val flash  = Module(new NullDev())
   val serial = Module(new MockSerial(trace))
 
   val cycle = RegInit(0.U(32.W))
-  when(io.ready) {
-    if (trace) printf(p"Cycle $cycle\n")
-    cycle := cycle + 1.U
-  }
+  if (trace) printf(p"Cycle $cycle\n")
+  cycle := cycle + 1.U
 
   core.io.dev       <> ioCtrl.io.core
   ioCtrl.io.ram     <> ram.io
@@ -39,22 +31,15 @@ class CoreTestModule(trace: Boolean = true) extends Module {
   io.d_ram.addr := ram.io.addr
   io.d_ram.mode := ram.io.mode
   io.d_ram.wdata := ram.io.wdata
-
-  core.reset := !io.ready
-  ioCtrl.reset := !io.ready
-  TestUtil.bindRAM(io.ready, io.ram_init, ioCtrl.io.ram, ram.io)
 }
 
-class CoreTest(c: CoreTestModule, fname: String) extends PeekPokeTester(c) {
+class CoreTest(c: CoreTestModule) extends PeekPokeTester(c) {
   reset()
-  private val data = DataHelper.read_insts(fname)
-  print("Loading data to RAM ...\n")
-  TestUtil.loadRAM(this, c.io.ready, c.io.ram_init, data)
 }
 
 // x31 = 0xdead000 : Fail. reason = (char*)a0
 // x31 = 0xcafe000 : Pass
-class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTest(c, fname) {
+class CoreTestNew(c: CoreTestModule, max_cycles: Int) extends CoreTest(c) {
 
   def isFinished(): Boolean = {
     val x31 = peek(c.d.reg(31)).toInt
@@ -73,7 +58,7 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
   }
 
   import java.io._
-  val traceFile = new PrintWriter(new File(fname + ".run"))
+  // val traceFile = new PrintWriter(new File(fname + ".run"))
 
   import scala.util.control.Breaks
   val loop = new Breaks
@@ -91,16 +76,16 @@ class CoreTestNew(c: CoreTestModule, fname: String, max_cycles: Int) extends Cor
       // print PC
       if(peek(c.d.finish_pc.valid) == 1) {
         val pc = peek(c.d.finish_pc.bits).toLong
-        traceFile.println("%08x".format(pc))
+        // traceFile.println("%08x".format(pc))
       }
     }
   }
-  traceFile.close()
+  // traceFile.close()
 }
 
 // [0x80001000] = 1 : Pass
 //              > 1 : Fail. Code = value / 2
-class RiscvTest(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreTestNew(c, fname, max_cycles) {
+class RiscvTest(c: CoreTestModule, max_cycles: Int) extends CoreTestNew(c, max_cycles) {
   override def isFinished(): Boolean = {
     // Workaround for verilator backend:
     //    val v = peekAt(c.ram.mem, 0x1000).toInt
@@ -118,7 +103,7 @@ class RiscvTest(c: CoreTestModule, fname: String, max_cycles: Int) extends CoreT
   }
 }
 
-class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+class CoreTestWithoutFw(c: CoreTestModule) extends CoreTest(c) {
   step(10)  // CPI=2, Skip 5 insts
   expect(c.d.reg(1), 20)
 
@@ -153,7 +138,7 @@ class CoreTestWithoutFw(c: CoreTestModule, fname: String) extends CoreTest(c, fn
 }
 
 
-class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+class CoreTestWithFw(c: CoreTestModule) extends CoreTest(c) {
   step(5) // pipeline entry: IF2 + ID1 + EX1 + MEM1 = 5
   expect(c.d.reg(1), 20)
   step(2)
@@ -182,7 +167,7 @@ class CoreTestWithFw(c: CoreTestModule, fname: String) extends CoreTest(c, fname
   expect(c.d.reg(5), "h_ffff_fff5".U)
 }
 
-class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+class CoreTest6(c: CoreTestModule) extends CoreTest(c) {
   step(3)                                      // all before l1 has entered pipeline
   for (_ <- 0 until 0x40) {
     step(1)
@@ -218,13 +203,13 @@ class CoreTest6(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
 class CoreTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv") // output .vcd wave file
   "Core module fwno" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTestWithoutFw(c, "test_asm/test2.bin")
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test2.hex")) {
+      c => new CoreTestWithoutFw(c)
     } should be(true)
   }
   "Core module fwyes" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new CoreTestWithFw(c, "test_asm/test3.bin")
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test3.hex")) {
+      c => new CoreTestWithFw(c)
     } should be(true)
   }
   for((name, timeout, trace) <- Seq(
@@ -233,8 +218,8 @@ class CoreTester extends ChiselFlatSpec {
     ("hello", 500, false)
   )) {
     name should "pass test" in {
-      iotesters.Driver.execute(args, () => new CoreTestModule(trace)) {
-        c => new CoreTestNew(c, s"test_asm/$name.bin", timeout)
+      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/$name.hex", trace)) {
+        c => new CoreTestNew(c, timeout)
       } should be (true)
     }
   }
@@ -243,8 +228,8 @@ class CoreTester extends ChiselFlatSpec {
 class MonitorTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   "monitor" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-      c => new CoreTestNew(c, "test_asm/monitor/monitor.bin", 15000)
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/monitor/monitor.hex", false)) {
+      c => new CoreTestNew(c, 15000)
     } should be (true)
   }
 }
@@ -252,8 +237,8 @@ class MonitorTester extends ChiselFlatSpec {
 class MMUTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv", "-tbn", "verilator")
   "page table" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-      c => new CoreTestNew(c, "test_asm/pagetable.bin", 1500)
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/pagetable.hex", false)) {
+      c => new CoreTestNew(c, 1500)
     } should be (true)
   }
 }
@@ -264,8 +249,8 @@ class RiscvTester extends ChiselFlatSpec {
 //  Not passed: rv32mi-p-illegal, rv32si-p-dirty, ?
   for(name <- names) {
     name should "pass test" in {
-      iotesters.Driver.execute(args, () => new CoreTestModule(false)) {
-        c => new RiscvTest(c, s"test_asm/riscv-test/$name.bin", 30000)
+      iotesters.Driver.execute(args, () => new CoreTestModule(s"test_asm/riscv-test/$name.hex", false)) {
+        c => new RiscvTest(c, 30000)
       } should be (true)
     }
   }
@@ -273,5 +258,5 @@ class RiscvTester extends ChiselFlatSpec {
 
 // runMain core_.Repl
 object Repl extends App {
-  iotesters.Driver.executeFirrtlRepl(args, () => new CoreTestModule)
+  iotesters.Driver.executeFirrtlRepl(args, () => new CoreTestModule(""))
 }

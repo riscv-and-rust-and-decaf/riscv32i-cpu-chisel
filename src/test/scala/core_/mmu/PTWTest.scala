@@ -3,47 +3,33 @@ package core_.mmu
 import chisel3._
 import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
 import chisel3.util._
-import core_.{RAMOp, TestUtil}
+import core_.RAMOp
 import devices.MockRam
+import java.io.File
 
-class PTWTestModule() extends Module {
+class PTWTestModule(ramDataFile: String) extends Module {
   val io = IO(new Bundle {
-    val ready    = Input(Bool())
-    val ram_init = Flipped(new RAMOp())
     val root     = Input(new PN())
     val req      = DeqIO(new PN())
     val rsp      = EnqIO(new PTE())
   })
 
   val ptw = Module(new PTW)
-  val ram = Module(new MockRam())
+  val ram = Module(new MockRam(ramDataFile))
 
   ptw.io.root <> io.root
   ptw.io.req <> io.req
   ptw.io.rsp <> io.rsp
-  ptw.reset := !io.ready
-  TestUtil.bindRAM(io.ready, io.ram_init, ptw.io.mem, ram.io)
+  ptw.io.mem <> ram.io
 }
 
 class PTWTest(m: PTWTestModule) extends PeekPokeTester(m) {
-  private val memData = (new PageTableMemBuilder)
-    .setPTE(0, 0x3ff, PTE_.make(0, PTE_.V))         // Map [0x3ff] to root as PDE
-    .setPTE(0, 0x3fe, PTE_.make(0, PTE_.VRW))       // Map [0x3fe] to root as PTE
-    .setPTE(0, 0x200, PTE_.make(0x400, PTE_.VRW))   // Map [0x200] to a huge page
-    .setPTE(0, 0x201, PTE_.make(0x401, PTE_.VRW))   // Map [0x201] to a not aligned huge page
-    .setPTE(0, 0x100, PTE_.make(1, PTE_.V))         // Map [0x100] to a next level page table
-    .setPTE(1, 0x000, PTE_.make(2, PTE_.VRW))       // Map [0x100][0] to a page
-    .setPTE(1, 0x001, PTE_.make(2, PTE_.V))         // Map [0x100][1] to invalid
-    .toMemData
-
   reset()
   // Init
   poke(m.io.req.valid, false)
   poke(m.io.rsp.ready, true)
   poke(m.io.root.p2, 0)
   poke(m.io.root.p1, 0)
-
-  TestUtil.loadRAM(this, m.io.ready, m.io.ram_init, memData)
   step(1)
 
   def check(vpn: Long, ppn: Option[Long]): Unit = {
@@ -93,15 +79,32 @@ class PageTableMemBuilder {
     mem(page)(idx) = pte
     this
   }
-  def toMemData: Seq[Long] = {
-    mem.flatten
+  def writeToFile(filePath: String) {
+    import java.io._
+    val file = new PrintWriter(new File(filePath))
+    for(word <- mem.flatten) {
+      for(i <- 0 until 4) {
+        file.println("%02x".format((word >> (i * 8)) & 0xff))
+      }
+    }
+    file.close()
   }
 }
 
 class PTWTester extends ChiselFlatSpec {
   val args = Array[String]()
   "PageTableWalker module" should "pass test" in {
-    iotesters.Driver.execute(args, () => new PTWTestModule()) {
+    (new PageTableMemBuilder)
+      .setPTE(0, 0x3ff, PTE_.make(0, PTE_.V))         // Map [0x3ff] to root as PDE
+      .setPTE(0, 0x3fe, PTE_.make(0, PTE_.VRW))       // Map [0x3fe] to root as PTE
+      .setPTE(0, 0x200, PTE_.make(0x400, PTE_.VRW))   // Map [0x200] to a huge page
+      .setPTE(0, 0x201, PTE_.make(0x401, PTE_.VRW))   // Map [0x201] to a not aligned huge page
+      .setPTE(0, 0x100, PTE_.make(1, PTE_.V))         // Map [0x100] to a next level page table
+      .setPTE(1, 0x000, PTE_.make(2, PTE_.VRW))       // Map [0x100][0] to a page
+      .setPTE(1, 0x001, PTE_.make(2, PTE_.V))         // Map [0x100][1] to invalid
+      .writeToFile("PTWTest.hex")
+
+    iotesters.Driver.execute(args, () => new PTWTestModule("PTWTest.hex")) {
       c => new PTWTest(c)
     } should be(true)
   }

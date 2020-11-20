@@ -2,13 +2,17 @@ package devices
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.loadMemoryFromFile
 import core_._
 
 
-class MockRam(printLog: Boolean = true) extends Module {
+class MockRam(ramDataFile: String = null, printLog: Boolean = true) extends Module {
   val io = IO(Flipped(new RAMOp))
 
   val mem = Mem(0x800000, UInt(8.W))
+  if(ramDataFile != null) {
+    loadMemoryFromFile(mem, ramDataFile)
+  }
 
   val mode = RegNext(io.mode, init=0.U)
   val addr = RegNext(io.addr, init=0.U)

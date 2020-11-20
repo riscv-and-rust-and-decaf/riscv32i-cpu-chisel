@@ -1,5 +1,5 @@
-insts := $(patsubst %.s,%.bin,$(wildcard *.s)) \
-         $(patsubst %.c,%.bin,$(wildcard *.c))
+insts := $(patsubst %.s,%.hex,$(wildcard *.s)) \
+         $(patsubst %.c,%.hex,$(wildcard *.c))
 
 PREFIX := riscv64-unknown-elf-
 OBJCOPY := ${PREFIX}objcopy
@@ -11,6 +11,9 @@ all: ${insts} riscv-test
 
 riscv-test:
 	make -C riscv-test
+
+%.hex: %.bin
+	hexdump -v -e '1/1 "%02x\n"' $^ > $@
 
 %.bin: %.o
 	${OBJCOPY} -O binary $^ $@

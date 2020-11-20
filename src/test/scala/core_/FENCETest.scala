@@ -5,7 +5,7 @@ import chisel3._
 import chisel3.iotesters._
 import devices._
 
-class FenceInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname) {
+class FenceInstTest(c: CoreTestModule) extends CoreTest(c) {
   step(100)
   expect(c.d.reg(1), 5)
 }
@@ -13,8 +13,8 @@ class FenceInstTest(c: CoreTestModule, fname: String) extends CoreTest(c, fname)
 class CoreFenceTester extends ChiselFlatSpec {
   val args = Array[String]("-fiwv")
   "fence and fence.i test" should "pass test" in {
-    iotesters.Driver.execute(args, () => new CoreTestModule()) {
-      c => new FenceInstTest(c, "test_asm/test_fence.bin")
+    iotesters.Driver.execute(args, () => new CoreTestModule("test_asm/test_fence.hex")) {
+      c => new FenceInstTest(c)
     } should be (true)
   }
 }
